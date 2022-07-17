@@ -28,7 +28,7 @@ We've simplified this for you with a bash script:
 
 | Directory	|      Purpose   																											|
 |----------	|:--------------------------------------------------------------:			|
-| ./docker 	|  for all the DockerFiles 	|																																				|
+| ./.docker 	|  for all the DockerFiles 	|																																				|
 | ./sites 	|  for all the sites (for the nginx webserver)												|
 
 ### Origins
