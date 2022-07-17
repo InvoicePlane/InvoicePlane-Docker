@@ -6,19 +6,24 @@ Docker-compose with a webserver, MySQL, phpmyadmin and redis
 
 ## Building
 Normally you build images to containers with the following command:
+
 `docker-compose up nginx mysql php-fpm phpmyadmin redis workspace --build -d`
+
 We've simplified this for you with a bash script:
 `./buildmeup.sh` will build the containers for you (on Linux and on Mac)
 
 ## Starting
 Normally you start containers with the following command:
+
 `docker-compose up nginx mysql php-fpm phpmyadmin redis workspace -d`
 
 We've simplified this for you with a bash script:
+
 `./startmeup.sh` will start the containers for you (on Linux and on Mac)
 
 ## Getting inside a container
 Normally you get into a container with the following command:
+
 `docker-compose exec --user=ivpldock workspace bash`
 
 We've simplified this for you with a bash script:
