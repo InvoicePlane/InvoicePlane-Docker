@@ -4,12 +4,12 @@
 #--------------------------------------------------------------------------
 #
 
-ARG LARADOCK_PHP_VERSION
-FROM php:${LARADOCK_PHP_VERSION}-alpine
+ARG ivpldock_PHP_VERSION
+FROM php:${ivpldock_PHP_VERSION}-alpine
 
 LABEL maintainer="Mahmoud Zalt <mahmoud@zalt.me>"
 
-ARG LARADOCK_PHP_VERSION
+ARG ivpldock_PHP_VERSION
 
 # If you're in China, or you need to change sources, will be set CHANGE_SOURCE to true in .env.
 
@@ -31,18 +31,23 @@ RUN apk --update add wget \
   cyrus-sasl-dev \
   libgsasl-dev \
   oniguruma-dev \
-  libressl \
-  libressl-dev \
   supervisor \
-  procps
+  procps; \
+  if [ $(php -r "echo PHP_VERSION_ID - PHP_RELEASE_VERSION;") = "50600" ] || \
+     [ $(php -r "echo PHP_VERSION_ID - PHP_RELEASE_VERSION;") = "70000" ]; then \
+    apk --update add libressl libressl-dev; \
+  else \
+    apk --update add openssl-dev; \
+  fi
 
 RUN pecl channel-update pecl.php.net; \
-    docker-php-ext-install mysqli mbstring pdo pdo_mysql xml pcntl; \
-    if [ $(php -r "echo PHP_MAJOR_VERSION;") = "8" ] && [ $(php -r "echo PHP_MINOR_VERSION;") = "1" ]; then \
-      php -m | grep -q 'tokenizer'; \
-    else \
-      docker-php-ext-install tokenizer; \
-    fi
+  docker-php-ext-install mysqli mbstring pdo pdo_mysql xml pcntl; \
+  if [ $(php -r "echo PHP_MAJOR_VERSION;") = "8" ] && \
+     [ $(php -r "echo PHP_VERSION_ID - PHP_RELEASE_VERSION;") != "80000" ]; then \
+    php -m | grep -oiE '^tokenizer$'; \
+  else \
+    docker-php-ext-install tokenizer; \
+  fi
 
 # Add a non-root user to help install ffmpeg:
 ARG PUID=1000
@@ -151,7 +156,7 @@ ARG INSTALL_ZIP_ARCHIVE=false
 RUN set -eux; \
   if [ ${INSTALL_ZIP_ARCHIVE} = true ]; then \
     apk --update add libzip-dev && \
-    if [ ${LARADOCK_PHP_VERSION} = "7.3" ] || [ ${LARADOCK_PHP_VERSION} = "7.4" ] || [ $(php -r "echo PHP_MAJOR_VERSION;") = "8" ]; then \
+    if [ ${ivpldock_PHP_VERSION} = "7.3" ] || [ ${ivpldock_PHP_VERSION} = "7.4" ] || [ $(php -r "echo PHP_MAJOR_VERSION;") = "8" ]; then \
       docker-php-ext-configure zip; \
     else \
       docker-php-ext-configure zip --with-libzip; \
@@ -205,6 +210,16 @@ RUN if [ ${INSTALL_AUDIOWAVEFORM} = true ]; then \
    && make install \
 ;fi
 
+#####################################
+# poppler-utils:
+#####################################
+USER root
+
+ARG INSTALL_POPPLER_UTILS=false
+
+RUN if [ ${INSTALL_POPPLER_UTILS} = true ]; then \
+  apk add --update --no-cache poppler-utils antiword \
+;fi
 
 # Install Cassandra drivers:
 ARG INSTALL_CASSANDRA=false

@@ -1,9 +1,9 @@
 server {
 
-    listen 80 default_server;
+    listen 80;
 
-    server_name localhost;
-    root /var/www/projects/default/public;
+    server_name copyme.local;
+    root /var/www/projects/copyme/public;
     index index.php index.html index.htm;
 
     location / {
@@ -30,4 +30,7 @@ server {
         root /var/www/letsencrypt/;
         log_not_found off;
     }
+
+    error_log /var/log/nginx/copyme_error.log;
+    access_log /var/log/nginx/copyme_access.log;
 }

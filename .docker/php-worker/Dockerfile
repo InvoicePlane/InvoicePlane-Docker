@@ -4,12 +4,12 @@
 #--------------------------------------------------------------------------
 #
 
-ARG LARADOCK_PHP_VERSION
-FROM php:${LARADOCK_PHP_VERSION}-alpine
+ARG IVPLDOCK_PHP_VERSION
+FROM php:${IVPLDOCK_PHP_VERSION}-alpine
 
 LABEL maintainer="Mahmoud Zalt <mahmoud@zalt.me>"
 
-ARG LARADOCK_PHP_VERSION
+ARG IVPLDOCK_PHP_VERSION
 
 # If you're in China, or you need to change sources, will be set CHANGE_SOURCE to true in .env.
 
@@ -32,15 +32,20 @@ RUN apk --update add wget \
   cyrus-sasl-dev \
   libgsasl-dev \
   oniguruma-dev \
-  libressl \
-  libressl-dev \
-  supervisor
+  supervisor; \
+  if [ $(php -r "echo PHP_VERSION_ID - PHP_RELEASE_VERSION;") = "50600" ] || \
+     [ $(php -r "echo PHP_VERSION_ID - PHP_RELEASE_VERSION;") = "70000" ]; then \
+    apk --update add libressl libressl-dev; \
+  else \
+    apk --update add openssl-dev; \
+  fi
 
 
 RUN pecl channel-update pecl.php.net; \
   docker-php-ext-install mysqli mbstring pdo pdo_mysql xml pcntl; \
-  if [ $(php -r "echo PHP_MAJOR_VERSION;") = "8" ] && [ $(php -r "echo PHP_MINOR_VERSION;") = "1" ]; then \
-    php -m | grep -q 'tokenizer'; \
+  if [ $(php -r "echo PHP_MAJOR_VERSION;") = "8" ] && \
+     [ $(php -r "echo PHP_VERSION_ID - PHP_RELEASE_VERSION;") != "80000" ]; then \
+    php -m | grep -oiE '^tokenizer$'; \
   else \
     docker-php-ext-install tokenizer; \
   fi
@@ -67,11 +72,22 @@ RUN if [ ${INSTALL_BZ2} = true ]; then \
 
 ARG INSTALL_GNUPG=false
 
-RUN set -eux; if [ ${INSTALL_GNUPG} = true ]; then \
-  apk add --no-cache --no-progress --virtual BUILD_DEPS_PHP_GNUPG gpgme-dev; \
-  apk add --no-cache --no-progress gpgme; \
-  pecl install gnupg; \
-  docker-php-ext-enable gnupg; \
+RUN set -eux; \
+  if [ ${INSTALL_GNUPG} = true ]; then \
+    apk add --no-cache --no-progress --virtual BUILD_DEPS_PHP_GNUPG gpgme-dev; \
+    if [ ${IVPLDOCK_PHP_VERSION} = "7.0" ]; then \
+      wget -O /tmp/gnupg.tgz "https://pecl.php.net/get/gnupg-1.5.1.tgz"; \
+      mkdir -p /tmp/gnupg; \
+      tar -C /tmp/gnupg -zxvf /tmp/gnupg.tgz --strip 1; \
+      cd /tmp/gnupg; \
+      phpize; \
+      ./configure; \
+      make && make install; \
+    else \
+      pecl install gnupg; \
+    fi; \
+    docker-php-ext-enable gnupg; \
+    php -m | grep -oiE '^gnupg$'; \
   fi
 
 #Install LDAP
@@ -87,7 +103,7 @@ ARG INSTALL_GD=false
 RUN if [ ${INSTALL_GD} = true ]; then \
   apk add --update --no-cache freetype-dev libjpeg-turbo-dev jpeg-dev libpng-dev; \
   if [ $(php -r "echo PHP_MAJOR_VERSION;") = "7" ] && [ $(php -r "echo PHP_MINOR_VERSION;") = "4" ]; then \
-  docker-php-ext-configure gd --with-freetype --with-jpeg --with-png; \
+  docker-php-ext-configure gd --with-freetype --with-jpeg; \
   else \
   docker-php-ext-configure gd --with-freetype-dir=/usr/lib/ --with-jpeg-dir=/usr/lib/ --with-png-dir=/usr/lib/; \
   fi; \
@@ -148,8 +164,12 @@ RUN if [ ${INSTALL_MONGO} = true ]; then \
       docker-php-ext-enable mongo; \
       php -m | grep -oiE '^mongo$'; \
     else \
-      if [ $(php -r "echo PHP_MAJOR_VERSION;") = "7" ] && { [ $(php -r "echo PHP_MINOR_VERSION;") = "0" ] || [ $(php -r "echo PHP_MINOR_VERSION;") = "1" ] ;}; then \
-        pecl install mongodb-1.9.2; \
+      if [ $(php -r "echo PHP_MAJOR_VERSION;") = "7" ] && [ $(php -r "echo PHP_MINOR_VERSION;") != "4" ]; then \
+        if [ $(php -r "echo PHP_MINOR_VERSION;") = "0" ] || [ $(php -r "echo PHP_MINOR_VERSION;") = "1" ]; then \
+          pecl install mongodb-1.9.2; \
+        else \
+          pecl install mongodb-1.16.2; \
+        fi; \
       else \
         pecl install mongodb; \
       fi; \
@@ -211,7 +231,7 @@ ARG INSTALL_ZIP_ARCHIVE=false
 RUN set -eux; \
   if [ ${INSTALL_ZIP_ARCHIVE} = true ]; then \
   apk --update add libzip-dev && \
-  if [ ${LARADOCK_PHP_VERSION} = "7.3" ] || [ ${LARADOCK_PHP_VERSION} = "7.4" ] || [ $(php -r "echo PHP_MAJOR_VERSION;") = "8" ]; then \
+  if [ ${IVPLDOCK_PHP_VERSION} = "7.3" ] || [ ${IVPLDOCK_PHP_VERSION} = "7.4" ] || [ $(php -r "echo PHP_MAJOR_VERSION;") = "8" ]; then \
   docker-php-ext-configure zip; \
   else \
   docker-php-ext-configure zip --with-libzip; \
@@ -258,13 +278,28 @@ RUN if [ ${INSTALL_AUDIOWAVEFORM} = true ]; then \
   && make install \
   ;fi
 
+#####################################
+# poppler-utils:
+#####################################
+USER root
+
+ARG INSTALL_POPPLER_UTILS=false
+
+RUN if [ ${INSTALL_POPPLER_UTILS} = true ]; then \
+  apk add --update --no-cache poppler-utils antiword \
+;fi
+
 # Install AMQP:
 ARG INSTALL_AMQP=false
 
 RUN if [ ${INSTALL_AMQP} = true ]; then \
   docker-php-ext-install sockets; \
   apk --update add -q rabbitmq-c rabbitmq-c-dev && \
-  if [ $(php -r "echo PHP_MAJOR_VERSION;") = "8" ]; then \
+  if [ ${IVPLDOCK_PHP_VERSION} = "7.3" ] \
+    || [ ${IVPLDOCK_PHP_VERSION} = "7.2" ] \
+    || [ ${IVPLDOCK_PHP_VERSION} = "7.1" ] \
+    || [ ${IVPLDOCK_PHP_VERSION} = "7.0" ] \
+    || [ ${IVPLDOCK_PHP_VERSION} = "5.6" ]; then \
     printf "\n" | pecl install amqp-1.11.0; \
   else \
     printf "\n" | pecl install amqp; \
@@ -310,24 +345,29 @@ RUN if [ ${INSTALL_CASSANDRA} = true ]; then \
 
 # Install Phalcon ext
 ARG INSTALL_PHALCON=false
-ARG PHALCON_VERSION
-ENV PHALCON_VERSION ${PHALCON_VERSION}
+ARG LARADOCK_PHALCON_VERSION
+ENV LARADOCK_PHALCON_VERSION ${LARADOCK_PHALCON_VERSION}
 
-RUN if [ $INSTALL_PHALCON = true ]; then \
-  apk --update add unzip gcc make re2c bash\
-  && git clone https://github.com/jbboehr/php-psr.git \
-  && cd php-psr \
-  && phpize \
-  && ./configure \
-  && make \
-  && make test \
-  && make install \
-  && curl -L -o /tmp/cphalcon.zip https://github.com/phalcon/cphalcon/archive/v${PHALCON_VERSION}.zip \
-  && unzip -d /tmp/ /tmp/cphalcon.zip \
-  && cd /tmp/cphalcon-${PHALCON_VERSION}/build \
-  && ./install \
-  && rm -rf /tmp/cphalcon* \
-  ;fi
+RUN if [ "$INSTALL_PHALCON" = true ]; then \
+      apk update \
+      && pecl channel-update pecl.php.net \
+      && apk add --no-cache libpcre32 \
+      && pecl install phalcon-${LARADOCK_PHALCON_VERSION}; \
+      docker-php-ext-enable phalcon; \
+      php -m | grep -q 'phalcon' \
+    ;fi
+
+# Install APCU ext
+ARG INSTALL_APCU=false
+
+RUN if [ ${INSTALL_APCU} = true ]; then \
+    if [ $(php -r "echo PHP_MAJOR_VERSION;") = "5" ]; then \
+        pecl install -a apcu-4.0.11; \
+    else \
+        pecl install apcu; \
+    fi && \
+    docker-php-ext-enable apcu \
+;fi
 
 ARG INSTALL_GHOSTSCRIPT=false
 RUN if [ $INSTALL_GHOSTSCRIPT = true ]; then \
@@ -362,6 +402,8 @@ RUN set -eux; \
       pecl install swoole-4.3.5; \
     elif [ $(php -r "echo PHP_VERSION_ID - PHP_RELEASE_VERSION;") = "70100" ]; then \
       pecl install swoole-4.5.11; \
+    elif [ $(php -r "echo PHP_MAJOR_VERSION;") = "7" ]; then \
+      pecl install swoole-4.8.12; \
     else \
       pecl install swoole; \
     fi; \
@@ -458,27 +500,55 @@ ARG INSTALL_MSSQL=false
 
 RUN set -eux; \
   if [ ${INSTALL_MSSQL} = true ]; then \
-  apk add --update gnupg \
+  apk add --update gnupg; \
   ###########################################################################
   # Ref from:
   # - https://docs.microsoft.com/en-us/sql/connect/odbc/linux-mac/installing-the-microsoft-odbc-driver-for-sql-server?view=sql-server-ver15#alpine17
   ###########################################################################
+  if [ $(php -r "echo PHP_MAJOR_VERSION;") = "7" ]; then \
   # Add Microsoft repo for Microsoft ODBC Driver 17 for Linux
-  # Driver version 17.5 or higher is required for Alpine support.
+  # Driver version 17.10 or higher is required for Alpine support.
   # Download the desired package(s)
-  && curl -O https://download.microsoft.com/download/e/4/e/e4e67866-dffd-428c-aac7-8d28ddafb39b/msodbcsql17_17.8.1.1-1_amd64.apk \
+  curl -O https://download.microsoft.com/download/e/4/e/e4e67866-dffd-428c-aac7-8d28ddafb39b/msodbcsql17_17.10.5.1-1_amd64.apk \
   # Verify signature, if 'gpg' is missing install it using 'apk add gnupg':
-  && curl -O https://download.microsoft.com/download/e/4/e/e4e67866-dffd-428c-aac7-8d28ddafb39b/msodbcsql17_17.8.1.1-1_amd64.sig \
+  && curl -O https://download.microsoft.com/download/e/4/e/e4e67866-dffd-428c-aac7-8d28ddafb39b/msodbcsql17_17.10.5.1-1_amd64.sig \
   && curl https://packages.microsoft.com/keys/microsoft.asc  | gpg --import - \
-  && gpg --verify msodbcsql17_17.8.1.1-1_amd64.sig msodbcsql17_17.8.1.1-1_amd64.apk \
+  && gpg --verify msodbcsql17_17.10.5.1-1_amd64.sig msodbcsql17_17.10.5.1-1_amd64.apk \
   # Install the package(s)
-  && apk add --allow-untrusted msodbcsql17_17.8.1.1-1_amd64.apk unixodbc-dev \
-  && pecl install sqlsrv pdo_sqlsrv \
+  && apk add --allow-untrusted msodbcsql17_17.10.5.1-1_amd64.apk unixodbc-dev \
+  ;else \
+  # Add Microsoft repo for Microsoft ODBC Driver 18 for Linux
+  # Driver version 18.5 or higher is required for Alpine support.
+  # Download the desired package(s)
+  curl -O https://download.microsoft.com/download/3/5/5/355d7943-a338-41a7-858d-53b259ea33f5/msodbcsql18_18.3.2.1-1_amd64.apk \
+  # Verify signature, if 'gpg' is missing install it using 'apk add gnupg':
+  && curl -O https://download.microsoft.com/download/3/5/5/355d7943-a338-41a7-858d-53b259ea33f5/msodbcsql18_18.3.2.1-1_amd64.sig \
+  && curl https://packages.microsoft.com/keys/microsoft.asc  | gpg --import - \
+  && gpg --verify msodbcsql18_18.3.2.1-1_amd64.sig msodbcsql18_18.3.2.1-1_amd64.apk \
+  # Install the package(s)
+  && apk add --allow-untrusted msodbcsql18_18.3.2.1-1_amd64.apk unixodbc-dev \
+  ;fi \
+  # 
+  && if [ $(php -r "echo PHP_VERSION_ID - PHP_RELEASE_VERSION;") = "70000" ]; then \
+    pecl install pdo_sqlsrv-5.3.0 sqlsrv-5.3.0 \
+  ;elif [ $(php -r "echo PHP_VERSION_ID - PHP_RELEASE_VERSION;") = "70100" ]; then \
+    pecl install pdo_sqlsrv-5.6.1 sqlsrv-5.6.1 \
+  ;elif [ $(php -r "echo PHP_VERSION_ID - PHP_RELEASE_VERSION;") = "70200" ]; then \
+    pecl install pdo_sqlsrv-5.8.1 sqlsrv-5.8.1 \
+  ;elif [ $(php -r "echo PHP_VERSION_ID - PHP_RELEASE_VERSION;") = "70300" ]; then \
+    pecl install pdo_sqlsrv-5.9.0 sqlsrv-5.9.0 \
+  ;elif [ $(php -r "echo PHP_VERSION_ID - PHP_RELEASE_VERSION;") = "70400" ]; then \
+    pecl install pdo_sqlsrv-5.10.1 sqlsrv-5.10.1 \
+  ;elif [ $(php -r "echo PHP_VERSION_ID - PHP_RELEASE_VERSION;") = "80000" ]; then \
+    pecl install pdo_sqlsrv-5.11.1 sqlsrv-5.11.1 \
+  ;else \
+    pecl install pdo_sqlsrv sqlsrv \
+  ;fi \
   # && echo extension=pdo_sqlsrv.so >> `php --ini | grep "Scan for additional .ini files" | sed -e "s|.*:\s*||"`/10_pdo_sqlsrv.ini
   # && echo extension=sqlsrv.so >> `php --ini | grep "Scan for additional .ini files" | sed -e "s|.*:\s*||"`/00_sqlsrv.ini
   && docker-php-ext-enable pdo_sqlsrv sqlsrv \
-  && php -m | grep -q 'pdo_sqlsrv' \
-  && php -m | grep -q 'sqlsrv' \
+  && php -m | grep -oiE '^pdo_sqlsrv$' \
+  && php -m | grep -oiE '^sqlsrv$' \
   ;fi
 
 ###########################################################################
@@ -507,6 +577,50 @@ RUN set -xe; \
   && rm /tmp/ssdb-client-php.tar.gz \
   && docker-php-ext-enable ssdb \
   ;fi
+
+###########################################################################
+# Intl:
+###########################################################################
+
+ARG INSTALL_INTL=false
+
+RUN if [ ${INSTALL_INTL} = true ]; then \
+    apk add icu-dev && \
+    docker-php-ext-configure intl && \
+    docker-php-ext-install intl && \
+    docker-php-ext-enable intl \
+;fi
+
+############################################################################
+## Event:
+############################################################################
+USER root
+
+ARG INSTALL_EVENT=false
+
+RUN set -eux; \
+  if [ ${INSTALL_EVENT} = true ]; then \
+      curl -L -o  /tmp/libevent.tar.gz https://github.com/libevent/libevent/releases/download/release-2.1.12-stable/libevent-2.1.12-stable.tar.gz   &&\
+      mkdir -p /tmp/libevent-php &&\
+      tar -C /tmp/libevent-php -zxvf /tmp/libevent.tar.gz --strip 1 &&\
+      cd /tmp/libevent-php &&\
+      ./configure --prefix=/usr/local/libevent-2.1.12  &&\
+      make &&\
+      make install &&\
+      rm /tmp/libevent.tar.gz &&\
+      docker-php-ext-install sockets  &&\
+      curl -L -o /tmp/event.tar.gz http://pecl.php.net/get/event-3.0.6.tgz &&\
+      mkdir -p /tmp/event-php &&\
+      tar -C /tmp/event-php -zxvf /tmp/event.tar.gz --strip 1 &&\
+      cd /tmp/event-php &&\
+      phpize &&\
+      ./configure  --with-event-libevent-dir=/usr/local/libevent-2.1.12/ &&\
+      make &&\
+      make install &&\
+      rm /tmp/event.tar.gz &&\
+      docker-php-ext-enable --ini-name zz-event.ini event &&\
+      php -m  | grep -q 'event' \
+;fi
 
 #
 #--------------------------------------------------------------------------
@@ -546,6 +660,6 @@ RUN php -v | head -n 1 | grep -q "PHP ${PHP_VERSION}."
 
 # Clean up
 RUN rm /var/cache/apk/* \
-  && mkdir -p /var/www
+  && mkdir -p /var/www/projects
 
 WORKDIR /etc/supervisor/conf.d/

@@ -12,13 +12,13 @@
 # Note: Base Image name format {image-tag}-{php-version}
 #
 
-ARG LARADOCK_PHP_VERSION
+ARG IVPLDOCK_PHP_VERSION
 ARG BASE_IMAGE_TAG_PREFIX=latest
-FROM laradock/php-fpm:${BASE_IMAGE_TAG_PREFIX}-${LARADOCK_PHP_VERSION}
+FROM laradock/php-fpm:${BASE_IMAGE_TAG_PREFIX}-${IVPLDOCK_PHP_VERSION}
 
 LABEL maintainer="Mahmoud Zalt <mahmoud@zalt.me>"
 
-ARG LARADOCK_PHP_VERSION
+ARG IVPLDOCK_PHP_VERSION
 
 # Set Environment Variables
 ENV DEBIAN_FRONTEND noninteractive
@@ -48,12 +48,12 @@ RUN set -xe; \
       #
       # Mandatory Software's such as ("mcrypt", "pdo_mysql", "libssl-dev", ....)
       # are installed on the base image 'laradock/php-fpm' image. If you want
-      # to add more Software or remove existing ones, you need to edit the
+      # to add more Software's or remove existing one, you need to edit the
       # base image (https://github.com/Laradock/php-fpm).
       #
       # next lines are here becase there is no auto build on dockerhub see https://github.com/laradock/laradock/pull/1903#issuecomment-463142846
       libzip-dev zip unzip && \
-      if [ ${LARADOCK_PHP_VERSION} = "7.3" ] || [ ${LARADOCK_PHP_VERSION} = "7.4" ] || [ $(php -r "echo PHP_MAJOR_VERSION;") = "8" ]; then \
+      if [ ${IVPLDOCK_PHP_VERSION} = "7.3" ] || [ ${IVPLDOCK_PHP_VERSION} = "7.4" ] || [ $(php -r "echo PHP_MAJOR_VERSION;") = "8" ]; then \
         docker-php-ext-configure zip; \
       else \
         docker-php-ext-configure zip --with-libzip; \
@@ -193,6 +193,7 @@ RUN if [ ${INSTALL_PGSQL} = true ]; then \
 
 ARG INSTALL_PG_CLIENT=false
 ARG INSTALL_POSTGIS=false
+ARG PG_CLIENT_VERSION
 
 RUN if [ ${INSTALL_PG_CLIENT} = true ]; then \
     apt-get install -yqq gnupg \
@@ -200,7 +201,7 @@ RUN if [ ${INSTALL_PG_CLIENT} = true ]; then \
     && echo "deb http://apt.postgresql.org/pub/repos/apt $VERSION_CODENAME-pgdg main" > /etc/apt/sources.list.d/pgdg.list \
     && curl -sL https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add - \
     && apt-get update -yqq \
-    && apt-get install -yqq postgresql-client-12 postgis; \
+    && apt-get install -yqq postgresql-client-${PG_CLIENT_VERSION} postgis; \
     if [ ${INSTALL_POSTGIS} = true ]; then \
       apt-get install -yqq postgis; \
     fi \
@@ -212,12 +213,17 @@ RUN if [ ${INSTALL_PG_CLIENT} = true ]; then \
 ###########################################################################
 
 ARG INSTALL_XDEBUG=false
+ARG XDEBUG_PORT=9003
 
 RUN if [ ${INSTALL_XDEBUG} = true ]; then \
   # Install the xdebug extension
   # https://xdebug.org/docs/compat
   if [ $(php -r "echo PHP_MAJOR_VERSION;") = "8" ] || { [ $(php -r "echo PHP_MAJOR_VERSION;") = "7" ] && { [ $(php -r "echo PHP_MINOR_VERSION;") = "4" ] || [ $(php -r "echo PHP_MINOR_VERSION;") = "3" ] ;} ;}; then \
-    pecl install xdebug-3.1.2; \
+    if [ $(php -r "echo PHP_MAJOR_VERSION;") = "8" ]; then \
+      pecl install xdebug-3.3.0; \
+    else \
+      pecl install xdebug-3.1.6; \
+    fi; \
   else \
     if [ $(php -r "echo PHP_MAJOR_VERSION;") = "5" ]; then \
       pecl install xdebug-2.5.5; \
@@ -235,10 +241,10 @@ RUN if [ ${INSTALL_XDEBUG} = true ]; then \
 # Copy xdebug configuration for remote debugging
 COPY ./xdebug.ini /usr/local/etc/php/conf.d/xdebug.ini
 
-RUN if [ $(php -r "echo PHP_MAJOR_VERSION;") = "8" ]; then \
+RUN if [ $(php -r "echo PHP_MAJOR_VERSION;") = "8" ] || { [ $(php -r "echo PHP_MAJOR_VERSION;") = "7" ] && { [ $(php -r "echo PHP_MINOR_VERSION;") = "4" ] || [ $(php -r "echo PHP_MINOR_VERSION;") = "3" ] ;} ;}; then \
   sed -i "s/xdebug.remote_host=/xdebug.client_host=/" /usr/local/etc/php/conf.d/xdebug.ini && \
   sed -i "s/xdebug.remote_connect_back=0/xdebug.discover_client_host=false/" /usr/local/etc/php/conf.d/xdebug.ini && \
-  sed -i "s/xdebug.remote_port=9000/xdebug.client_port=9003/" /usr/local/etc/php/conf.d/xdebug.ini && \
+  sed -i "s/xdebug.remote_port=9000/xdebug.client_port=${XDEBUG_PORT}/" /usr/local/etc/php/conf.d/xdebug.ini && \
   sed -i "s/xdebug.profiler_enable=0/; xdebug.profiler_enable=0/" /usr/local/etc/php/conf.d/xdebug.ini && \
   sed -i "s/xdebug.profiler_output_dir=/xdebug.output_dir=/" /usr/local/etc/php/conf.d/xdebug.ini && \
   sed -i "s/xdebug.remote_mode=req/; xdebug.remote_mode=req/" /usr/local/etc/php/conf.d/xdebug.ini && \
@@ -259,11 +265,9 @@ USER root
 ARG INSTALL_PCOV=false
 
 RUN if [ ${INSTALL_PCOV} = true ]; then \
-  if [ $(php -r "echo PHP_MAJOR_VERSION;") = "7" ]; then \
-    if [ $(php -r "echo PHP_MINOR_VERSION;") != "0" ]; then \
-      pecl install pcov && \
-      docker-php-ext-enable pcov \
-    ;fi \
+  if [ $(php -r "echo PHP_MAJOR_VERSION;") = "8" ]  || { [ $(php -r "echo PHP_MAJOR_VERSION;") = "7" ] && [ $(php -r "echo PHP_MINOR_VERSION;") != "0" ]; }; then \
+    pecl install pcov && \
+    docker-php-ext-enable pcov \
   ;fi \
 ;fi
 
@@ -275,7 +279,7 @@ ARG INSTALL_PHPDBG=false
 
 RUN if [ ${INSTALL_PHPDBG} = true ]; then \
     # Load the xdebug extension only with phpunit commands
-    apt-get install -yqq --force-yes php${LARADOCK_PHP_VERSION}-phpdbg \
+    apt-get install -yqq --force-yes php${IVPLDOCK_PHP_VERSION}-phpdbg \
 ;fi
 
 ###########################################################################
@@ -302,6 +306,8 @@ RUN if [ ${INSTALL_PHPREDIS} = true ]; then \
     # Install Php Redis Extension
     if [ $(php -r "echo PHP_MAJOR_VERSION;") = "5" ]; then \
       pecl install -o -f redis-4.3.0; \
+    elif [ $(php -r "echo PHP_MAJOR_VERSION;") = "7" ] && { [ $(php -r "echo PHP_MINOR_VERSION;") = "0" ] || [ $(php -r "echo PHP_MINOR_VERSION;") = "1" ] ;}; then \
+      pecl install -o -f redis-5.3.7; \
     else \
       pecl install -o -f redis; \
     fi \
@@ -323,6 +329,8 @@ RUN set -eux; \
         pecl install swoole-4.3.5; \
       elif [ $(php -r "echo PHP_VERSION_ID - PHP_RELEASE_VERSION;") = "70100" ]; then \
         pecl install swoole-4.5.11; \
+      elif [ $(php -r "echo PHP_MAJOR_VERSION;") = "7" ]; then \
+        pecl install swoole-4.8.12; \
       else \
         pecl install swoole; \
       fi; \
@@ -358,8 +366,12 @@ RUN if [ ${INSTALL_MONGO} = true ]; then \
       docker-php-ext-enable mongo; \
       php -m | grep -oiE '^mongo$'; \
     else \
-      if [ $(php -r "echo PHP_MAJOR_VERSION;") = "7" ] && { [ $(php -r "echo PHP_MINOR_VERSION;") = "0" ] || [ $(php -r "echo PHP_MINOR_VERSION;") = "1" ] ;}; then \
-        pecl install mongodb-1.9.2; \
+      if [ $(php -r "echo PHP_MAJOR_VERSION;") = "7" ] && [ $(php -r "echo PHP_MINOR_VERSION;") != "4" ]; then \
+        if [ $(php -r "echo PHP_MINOR_VERSION;") = "0" ] || [ $(php -r "echo PHP_MINOR_VERSION;") = "1" ]; then \
+          pecl install mongodb-1.9.2; \
+        else \
+          pecl install mongodb-1.16.2; \
+        fi; \
       else \
         pecl install mongodb; \
       fi; \
@@ -417,8 +429,12 @@ RUN set -eux; \
     if [ ${INSTALL_AMQP} = true ]; then \
       # # Install the amqp extension
       apt-get -yqq install librabbitmq-dev; \
-      if [ $(php -r "echo PHP_MAJOR_VERSION;") = "8" ]; then \
-        pecl install amqp-1.11.0beta; \
+      if [ ${IVPLDOCK_PHP_VERSION} = "7.3" ] \
+        || [ ${IVPLDOCK_PHP_VERSION} = "7.2" ] \
+        || [ ${IVPLDOCK_PHP_VERSION} = "7.1" ] \
+        || [ ${IVPLDOCK_PHP_VERSION} = "7.0" ] \
+        || [ ${IVPLDOCK_PHP_VERSION} = "5.6" ]; then \
+        pecl install amqp-1.11.0; \
       else \
         pecl install amqp; \
       fi; \
@@ -456,8 +472,8 @@ RUN if [ ${INSTALL_CASSANDRA} = true ]; then \
       make clean > /dev/null && \
       make > /dev/null 2>&1 && \
       make install && \
-      echo "extension=cassandra.so" >> /etc/php/${LARADOCK_PHP_VERSION}/mods-available/cassandra.ini && \
-      ln -s /etc/php/${LARADOCK_PHP_VERSION}/mods-available/cassandra.ini /etc/php/${LARADOCK_PHP_VERSION}/cli/conf.d/30-cassandra.ini; \
+      echo "extension=cassandra.so" >> /etc/php/${IVPLDOCK_PHP_VERSION}/mods-available/cassandra.ini && \
+      ln -s /etc/php/${IVPLDOCK_PHP_VERSION}/mods-available/cassandra.ini /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/30-cassandra.ini; \
     fi \
 ;fi
 
@@ -594,13 +610,17 @@ RUN set -xe; \
 ###########################################################################
 
 ARG INSTALL_OCI8=false
-ARG ORACLE_INSTANT_CLIENT_MIRROR=https://github.com/diogomascarenha/oracle-instantclient/raw/master/
+ARG ORACLE_INSTANT_CLIENT_MIRROR=https://github.com/the-paulus/oracle-instantclient/raw/master/
+ARG ORACLE_INSTANT_CLIENT_ARCH=x86_64
+ARG ORACLE_INSTANT_CLIENT_MAJOR=18
+ARG ORACLE_INSTANT_CLIENT_MINOR=3
 
-ENV LD_LIBRARY_PATH="/opt/oracle/instantclient_12_1"
-ENV OCI_HOME="/opt/oracle/instantclient_12_1"
-ENV OCI_LIB_DIR="/opt/oracle/instantclient_12_1"
-ENV OCI_INCLUDE_DIR="/opt/oracle/instantclient_12_1/sdk/include"
-ENV OCI_VERSION=12
+ENV ORACLE_INSTANT_CLIENT_VERSION=${ORACLE_INSTANT_CLIENT_MAJOR}_${ORACLE_INSTANT_CLIENT_MINOR}
+ENV LD_LIBRARY_PATH="/opt/oracle/instantclient_${ORACLE_INSTANT_CLIENT_VERSION}"
+ENV OCI_HOME="/opt/oracle/instantclient_${ORACLE_INSTANT_CLIENT_VERSION}"
+ENV OCI_LIB_DIR="/opt/oracle/instantclient_${ORACLE_INSTANT_CLIENT_VERSION}"
+ENV OCI_INCLUDE_DIR="/opt/oracle/instantclient_${ORACLE_INSTANT_CLIENT_VERSION}/sdk/include"
+ENV OCI_VERSION=${ORACLE_INSTANT_CLIENT_MAJOR}
 
 RUN if [ ${INSTALL_OCI8} = true ]; then \
     # Install wget
@@ -608,13 +628,13 @@ RUN if [ ${INSTALL_OCI8} = true ]; then \
     # Install Oracle Instantclient
     && mkdir /opt/oracle \
         && cd /opt/oracle \
-        && wget ${ORACLE_INSTANT_CLIENT_MIRROR}instantclient-basic-linux.x64-12.1.0.2.0.zip \
-        && wget ${ORACLE_INSTANT_CLIENT_MIRROR}instantclient-sdk-linux.x64-12.1.0.2.0.zip \
-        && unzip /opt/oracle/instantclient-basic-linux.x64-12.1.0.2.0.zip -d /opt/oracle \
-        && unzip /opt/oracle/instantclient-sdk-linux.x64-12.1.0.2.0.zip -d /opt/oracle \
-        && ln -s /opt/oracle/instantclient_12_1/libclntsh.so.12.1 /opt/oracle/instantclient_12_1/libclntsh.so \
-        && ln -s /opt/oracle/instantclient_12_1/libclntshcore.so.12.1 /opt/oracle/instantclient_12_1/libclntshcore.so \
-        && ln -s /opt/oracle/instantclient_12_1/libocci.so.12.1 /opt/oracle/instantclient_12_1/libocci.so \
+        && wget ${ORACLE_INSTANT_CLIENT_MIRROR}instantclient-basic-linux.${ORACLE_INSTANT_CLIENT_ARCH}-${ORACLE_INSTANT_CLIENT_VERSION}.zip \
+      && wget ${ORACLE_INSTANT_CLIENT_MIRROR}instantclient-sdk-linux.${ORACLE_INSTANT_CLIENT_ARCH}-${ORACLE_INSTANT_CLIENT_VERSION}.zip \
+      && unzip /opt/oracle/instantclient-basic-linux.${ORACLE_INSTANT_CLIENT_ARCH}-${ORACLE_INSTANT_CLIENT_VERSION}.zip -d /opt/oracle \
+      && unzip /opt/oracle/instantclient-sdk-linux.${ORACLE_INSTANT_CLIENT_ARCH}-${ORACLE_INSTANT_CLIENT_VERSION}.zip -d /opt/oracle \
+      && if [ ${OCI_VERSION} -lt 18 ] ; then ln -s /opt/oracle/instantclient_${ORACLE_INSTANT_CLIENT_VERSION}/libclntsh.so.${ORACLE_INSTANT_CLIENT_MAJOR}.${ORACLE_INSTANT_CLIENT_MINOR} /opt/oracle/instantclient_${ORACLE_INSTANT_CLIENT_VERSION}/libclntsh.so ; fi\
+      && if [ ${OCI_VERSION} -lt 18 ] ; then ln -s /opt/oracle/instantclient_${ORACLE_INSTANT_CLIENT_VERSION}/libclntshcore.so.${ORACLE_INSTANT_CLIENT_MAJOR}.${ORACLE_INSTANT_CLIENT_MINOR} /opt/oracle/instantclient_${ORACLE_INSTANT_CLIENT_VERSION}/libclntshcore.so ; fi \
+      && if [ ${OCI_VERSION} -lt 18 ] ; then ln -s /opt/oracle/instantclient_${ORACLE_INSTANT_CLIENT_VERSION}/libocci.so.${ORACLE_INSTANT_CLIENT_MAJOR}.${ORACLE_INSTANT_CLIENT_MINOR} /opt/oracle/instantclient_${ORACLE_INSTANT_CLIENT_VERSION}/libocci.so ; fi \
         && rm -rf /opt/oracle/*.zip \
     # Install PHP extensions deps
     && apt-get install --no-install-recommends -yqq \
@@ -622,15 +642,17 @@ RUN if [ ${INSTALL_OCI8} = true ]; then \
       freetds-dev && \
     # Install PHP extensions
     if [ $(php -r "echo PHP_MAJOR_VERSION;") = "5" ]; then \
-      echo 'instantclient,/opt/oracle/instantclient_12_1/' | pecl install oci8-2.0.12; \
+      echo 'instantclient,/opt/oracle/instantclient_${ORACLE_INSTANT_CLIENT_VERSION}/' | pecl install oci8-2.0.12; \
     elif [ $(php -r "echo PHP_MAJOR_VERSION;") = "7" ]; then \
-      echo 'instantclient,/opt/oracle/instantclient_12_1/' | pecl install oci8-2.2.0; \
+      echo 'instantclient,/opt/oracle/instantclient_${ORACLE_INSTANT_CLIENT_VERSION}/' | pecl install oci8-2.2.0; \
     elif [ $(php -r "echo PHP_MAJOR_VERSION;") = "8" ] && [ $(php -r "echo PHP_MINOR_VERSION;") = "0" ]; then \
-      echo 'instantclient,/opt/oracle/instantclient_12_1/' | pecl install oci8-3.0.1; \
+      echo "instantclient,/opt/oracle/instantclient_${ORACLE_INSTANT_CLIENT_VERSION}/" | pecl install oci8-3.0.1; \
+    elif [ $(php -r "echo PHP_MAJOR_VERSION . PHP_MINOR_VERSION;") = "81" ]; then \
+        echo "instantclient,/opt/oracle/instantclient_${ORACLE_INSTANT_CLIENT_VERSION}/" | pecl install oci8-3.2.1; \
     else \
-      echo 'instantclient,/opt/oracle/instantclient_12_1/' | pecl install oci8; \
+      echo "instantclient,/opt/oracle/instantclient_${ORACLE_INSTANT_CLIENT_VERSION}/" | pecl install oci8; \
     fi \
-        && docker-php-ext-configure pdo_oci --with-pdo-oci=instantclient,/opt/oracle/instantclient_12_1,12.1 \
+    && docker-php-ext-configure pdo_oci --with-pdo-oci=instantclient,/opt/oracle/instantclient_${ORACLE_INSTANT_CLIENT_VERSION},${ORACLE_INSTANT_CLIENT_MAJOR}.${ORACLE_INSTANT_CLIENT_MINOR} \
         && docker-php-ext-configure pdo_dblib --with-libdir=/lib/x86_64-linux-gnu \
         && docker-php-ext-install \
                 pdo_oci \
@@ -645,11 +667,12 @@ RUN if [ ${INSTALL_OCI8} = true ]; then \
 ARG INSTALL_IONCUBE=false
 
 RUN if [ ${INSTALL_IONCUBE} = true ]; then \
-    if [ $(php -r "echo PHP_MAJOR_VERSION;") != "8" ]; then \
+    if [ ${IVPLDOCK_PHP_VERSION} != "8.3" ] \
+      && [ ${IVPLDOCK_PHP_VERSION} != "8.0" ]; then \
       # Install the php ioncube loader
       curl -L -o /tmp/ioncube_loaders_lin_x86-64.tar.gz https://downloads.ioncube.com/loader_downloads/ioncube_loaders_lin_x86-64.tar.gz \
       && tar zxpf /tmp/ioncube_loaders_lin_x86-64.tar.gz -C /tmp \
-      && mv /tmp/ioncube/ioncube_loader_lin_${LARADOCK_PHP_VERSION}.so $(php -r "echo ini_get('extension_dir');")/ioncube_loader.so \
+      && mv /tmp/ioncube/ioncube_loader_lin_${IVPLDOCK_PHP_VERSION}.so $(php -r "echo ini_get('extension_dir');")/ioncube_loader.so \
       && printf "zend_extension=ioncube_loader.so\n" > $PHP_INI_DIR/conf.d/0ioncube.ini \
       && rm -rf /tmp/ioncube* \
       && php -m | grep -oiE '^ionCube Loader$' \
@@ -715,7 +738,8 @@ ARG INSTALL_LDAP=false
 
 RUN if [ ${INSTALL_LDAP} = true ]; then \
     apt-get install -yqq libldap2-dev && \
-    docker-php-ext-configure ldap --with-libdir=lib/x86_64-linux-gnu/ && \
+    ARCH=$(arch)   && \
+    docker-php-ext-configure ldap --with-libdir="lib/${ARCH}-linux-gnu/" && \
     docker-php-ext-install ldap \
 ;fi
 
@@ -737,12 +761,17 @@ RUN set -eux; \
       ###########################################################################
       # Ref from https://github.com/Microsoft/msphpsql/wiki/Dockerfile-for-adding-pdo_sqlsrv-and-sqlsrv-to-official-php-image
       ###########################################################################
-      # Add Microsoft repo for Microsoft ODBC Driver 13 for Linux
-      apt-get install -yqq apt-transport-https gnupg lsb-release \
-      && curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add - \
+      # Add Microsoft repo for Microsoft ODBC Driver 13 for Linux \
+      apt-get update \
+      && apt-get install -yqq apt-transport-https gnupg lsb-release \
+      && if [ $(php -r "echo PHP_MAJOR_VERSION;") = "8" ] && [ ${IVPLDOCK_PHP_VERSION} != "8.0" ]; then \
+        curl https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor -o /usr/share/keyrings/microsoft-prod.gpg \
+      ;else \
+        curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add - \
+      ;fi \
       && curl https://packages.microsoft.com/config/debian/$(lsb_release -rs)/prod.list > /etc/apt/sources.list.d/mssql-release.list \
       && apt-get update -yqq \
-      && ACCEPT_EULA=Y apt-get install -yqq unixodbc unixodbc-dev libgss3 odbcinst msodbcsql17 locales \
+      && ACCEPT_EULA=Y apt-get install -yqq unixodbc unixodbc-dev libgss3 odbcinst msodbcsql18 locales \
       && echo "en_US.UTF-8 UTF-8" > /etc/locale.gen \
       && ln -sfn /etc/locale.alias /usr/share/locale/locale.alias \
       && locale-gen \
@@ -752,6 +781,12 @@ RUN set -eux; \
         pecl install pdo_sqlsrv-5.6.1 sqlsrv-5.6.1 \
       ;elif [ $(php -r "echo PHP_VERSION_ID - PHP_RELEASE_VERSION;") = "70200" ]; then \
         pecl install pdo_sqlsrv-5.8.1 sqlsrv-5.8.1 \
+      ;elif [ $(php -r "echo PHP_VERSION_ID - PHP_RELEASE_VERSION;") = "70300" ]; then \
+        pecl install pdo_sqlsrv-5.9.0 sqlsrv-5.9.0 \
+      ;elif [ $(php -r "echo PHP_VERSION_ID - PHP_RELEASE_VERSION;") = "70400" ]; then \
+        pecl install pdo_sqlsrv-5.10.1 sqlsrv-5.10.1 \
+      ;elif [ $(php -r "echo PHP_VERSION_ID - PHP_RELEASE_VERSION;") = "80000" ]; then \
+        pecl install pdo_sqlsrv-5.11.1 sqlsrv-5.11.1 \
       ;else \
         pecl install pdo_sqlsrv sqlsrv \
       ;fi \
@@ -784,6 +819,7 @@ ARG IMAGEMAGICK_VERSION=latest
 ENV IMAGEMAGICK_VERSION ${IMAGEMAGICK_VERSION}
 
 RUN if [ ${INSTALL_IMAGEMAGICK} = true ]; then \
+    apt-get update && \
     apt-get install -yqq libmagickwand-dev imagemagick && \
     if [ $(php -r "echo PHP_MAJOR_VERSION;") = "8" ]; then \
       cd /tmp && \
@@ -851,21 +887,12 @@ ARG LARADOCK_PHALCON_VERSION
 ENV LARADOCK_PHALCON_VERSION ${LARADOCK_PHALCON_VERSION}
 
 RUN if [ $INSTALL_PHALCON = true ]; then \
-    apt-get install -yqq unzip libpcre3-dev gcc make re2c git automake autoconf\
-    && git clone https://github.com/jbboehr/php-psr.git \
-    && cd php-psr \
-    && phpize \
-    && ./configure \
-    && make \
-    && make test \
-    && make install \
-    && curl -L -o /tmp/cphalcon.zip https://github.com/phalcon/cphalcon/archive/v${LARADOCK_PHALCON_VERSION}.zip \
-    && unzip -d /tmp/ /tmp/cphalcon.zip \
-    && cd /tmp/cphalcon-${LARADOCK_PHALCON_VERSION}/build \
-    && ./install \
-    && mv /usr/local/etc/php/conf.d/phalcon.ini.disable /usr/local/etc/php/conf.d/phalcon.ini \
-    && rm -rf /tmp/cphalcon* \
-;fi
+      apt-get update -yqq \
+      && pecl channel-update pecl.php.net \
+      && apt-get install -yqq libpcre3-dev; \
+      pecl install phalcon-${LARADOCK_PHALCON_VERSION}; \
+      docker-php-ext-enable phalcon \
+  ;fi
 
 ###########################################################################
 # APCU:
@@ -1001,6 +1028,7 @@ USER root
 ARG INSTALL_FFMPEG=false
 
 RUN if [ ${INSTALL_FFMPEG} = true ]; then \
+    apt-get update -y && \
     apt-get -y install ffmpeg \
 ;fi
 
@@ -1025,6 +1053,16 @@ RUN if [ ${INSTALL_AUDIOWAVEFORM} = true ]; then \
    && make install \
 ;fi
 
+#####################################
+# poppler-utils:
+#####################################
+USER root
+
+ARG INSTALL_POPPLER_UTILS=false
+
+RUN if [ ${INSTALL_POPPLER_UTILS} = true ]; then \
+  apt-get -y install poppler-utils antiword \
+;fi
 
 #####################################
 # wkhtmltopdf:
@@ -1033,9 +1071,11 @@ RUN if [ ${INSTALL_AUDIOWAVEFORM} = true ]; then \
 USER root
 
 ARG INSTALL_WKHTMLTOPDF=false
+ARG WKHTMLTOPDF_VERSION=0.12.6.1-3
 
 RUN if [ ${INSTALL_WKHTMLTOPDF} = true ]; then \
-    apt-get install -yqq \
+    ARCH=$(arch | sed s/aarch64/arm64/ | sed s/x86_64/amd64/) \
+    && apt-get install -yqq \
       libxrender1 \
       libfontconfig1 \
       libx11-dev \
@@ -1046,9 +1086,24 @@ RUN if [ ${INSTALL_WKHTMLTOPDF} = true ]; then \
       xfonts-base \
       xfonts-75dpi \
       wget \
-    && wget https://github.com/wkhtmltopdf/packaging/releases/download/0.12.6-1/wkhtmltox_0.12.6-1.stretch_amd64.deb \
-    && dpkg -i wkhtmltox_0.12.6-1.stretch_amd64.deb \
-    && apt -f install \
+    # && cat /etc/os-release \
+    && if [ ${IVPLDOCK_PHP_VERSION} = "5.6" ] || \
+        [ ${IVPLDOCK_PHP_VERSION} = "7.0" ]; then \
+      wget "https://github.com/wkhtmltopdf/packaging/releases/download/0.12.6-1/wkhtmltox_0.12.6-1.stretch_${ARCH}.deb"; \
+      dpkg -i "wkhtmltox_0.12.6-1.stretch_${ARCH}.deb"; \
+    elif [ ${IVPLDOCK_PHP_VERSION} = "7.1" ] || \
+        [ ${IVPLDOCK_PHP_VERSION} = "7.2" ] || \
+        [ ${IVPLDOCK_PHP_VERSION} = "7.3" ] || \
+        [ ${IVPLDOCK_PHP_VERSION} = "7.4" ]; then \
+      wget "https://github.com/wkhtmltopdf/packaging/releases/download/0.12.6-1/wkhtmltox_0.12.6-1.buster_${ARCH}.deb"; \
+      dpkg -i "wkhtmltox_0.12.6-1.buster_${ARCH}.deb"; \
+    elif [ ${IVPLDOCK_PHP_VERSION} = "8.0" ]; then \
+      wget "https://github.com/wkhtmltopdf/packaging/releases/download/${WKHTMLTOPDF_VERSION}/wkhtmltox_${WKHTMLTOPDF_VERSION}.bullseye_${ARCH}.deb"; \
+      dpkg -i "wkhtmltox_${WKHTMLTOPDF_VERSION}.bullseye_${ARCH}.deb"; \
+    else \
+      wget "https://github.com/wkhtmltopdf/packaging/releases/download/${WKHTMLTOPDF_VERSION}/wkhtmltox_${WKHTMLTOPDF_VERSION}.bookworm_${ARCH}.deb"; \
+      dpkg -i "wkhtmltox_${WKHTMLTOPDF_VERSION}.bookworm_${ARCH}.deb"; \
+    fi \
 ;fi
 
 #####################################
@@ -1085,9 +1140,9 @@ ARG INSTALL_CACHETOOL=false
 
 RUN if [ ${INSTALL_CACHETOOL} = true ]; then \
     if [ $(php -r "echo PHP_MAJOR_VERSION;") = "7" ] && [ $(php -r "echo PHP_MINOR_VERSION;") -ge 1 ]; then \
-            curl -sO http://gordalina.github.io/cachetool/downloads/cachetool.phar; \
+            curl -sO https://gordalina.github.io/cachetool/downloads/cachetool.phar; \
     else \
-        curl http://gordalina.github.io/cachetool/downloads/cachetool-3.2.1.phar -o cachetool.phar; \
+        curl https://gordalina.github.io/cachetool/downloads/cachetool-3.2.1.phar -o cachetool.phar; \
     fi && \
     chmod +x cachetool.phar && \
     mv cachetool.phar /usr/local/bin/cachetool \
@@ -1118,15 +1173,24 @@ USER root
 ARG INSTALL_PHPDECIMAL=false
 
 RUN if [ ${INSTALL_PHPDECIMAL} = true ]; then \
-    if [ $(php -r "echo PHP_MAJOR_VERSION;") = "5" ]; then \
-      echo 'decimal not support PHP 5.6'; \
+  if [ $(php -r "echo PHP_MAJOR_VERSION;") = "5" ]; then \
+    echo 'decimal not support PHP 5.6'; \
+  else \
+    if [ $(php -r "echo PHP_MAJOR_VERSION;") = "8" ] && \
+        [ ${IVPLDOCK_PHP_VERSION} != "8.0" ]; then \
+      curl -L -o /tmp/mpdecimal.tar.gz "https://www.bytereef.org/software/mpdecimal/releases/mpdecimal-2.5.1.tar.gz"; \
+      mkdir -p /tmp/mpdecimal; \
+      tar -C /tmp/mpdecimal -zxvf /tmp/mpdecimal.tar.gz --strip 1; \
+      cd /tmp/mpdecimal; \
+      ./configure && make && make install; \
     else \
-      apt-get install -yqq libmpdec-dev \
-      && pecl install decimal \
-      && docker-php-ext-enable decimal \
-      && php -m | grep -q 'decimal' \
-    ;fi \
-;fi
+      apt-get install -yqq libmpdec-dev; \
+    fi; \
+    pecl install decimal; \
+    docker-php-ext-enable decimal; \
+    php -m | grep -oiE '^decimal$'; \
+  fi; \
+fi
 
 ###########################################################################
 # zookeeper
@@ -1160,8 +1224,8 @@ ARG NEW_RELIC=${NEW_RELIC}
 ARG NEW_RELIC_KEY=${NEW_RELIC_KEY}
 ARG NEW_RELIC_APP_NAME=${NEW_RELIC_APP_NAME}
 
-RUN if [ ${NEW_RELIC} = true ]; then \
-  curl -L http://download.newrelic.com/php_agent/release/newrelic-php5-9.18.1.303-linux.tar.gz | tar -C /tmp -zx && \
+RUN if [ ${NEW_RELIC} = true ] ]; then \
+  curl -L http://download.newrelic.com/php_agent/archive/10.15.0.4/newrelic-php5-10.15.0.4-linux.tar.gz | tar -C /tmp -zx && \
   export NR_INSTALL_USE_CP_NOT_LN=1 && \
   export NR_INSTALL_SILENT=1 && \
   /tmp/newrelic-php5-*/newrelic-install install && \
@@ -1200,14 +1264,29 @@ RUN set -xe; \
     && rm /tmp/ssdb-client-php.tar.gz \
     && docker-php-ext-enable ssdb \
 ;fi
+
+###########################################################################
+# Legacy Openssl Config:
+###########################################################################
+ARG LEGACY_OPENSSL=false
+
+RUN if [ ${LEGACY_OPENSSL} = true ]; then \
+  if openssl version | grep -q "OpenSSL 3"; then \
+    sed -i 's/# providers = provider_sect/providers = provider_sect/g' /etc/ssl/openssl.cnf && \
+    sed -i '$a[provider_sect]\ndefault=default_sect\nlegacy=legacy_sect\n' /etc/ssl/openssl.cnf && \
+    sed -i '$a[default_sect]\nactivate=1\n[legacy_sect]\nactivate=1\n' /etc/ssl/openssl.cnf \
+  ;fi \
+;fi
+
 ###########################################################################
 # Downgrade Openssl:
 ###########################################################################
 
 ARG DOWNGRADE_OPENSSL_TLS_AND_SECLEVEL=false
+ARG DOWNGRADE_OPENSSL_TLS_VERSION=1.2
 
 RUN if [ ${DOWNGRADE_OPENSSL_TLS_AND_SECLEVEL} = true ]; then \
-    sed -i 's,^\(MinProtocol[ ]*=\).*,\1'TLSv1.2',g' /etc/ssl/openssl.cnf \
+    sed -i 's,^\(MinProtocol[ ]*=\).*,\1'TLSv${DOWNGRADE_OPENSSL_TLS_VERSION}',g' /etc/ssl/openssl.cnf \
     && \
     sed -i 's,^\(CipherString[ ]*=\).*,\1'DEFAULT@SECLEVEL=1',g' /etc/ssl/openssl.cnf\
 ;fi
@@ -1233,11 +1312,55 @@ RUN if [ ${INSTALL_ZMQ} = true ]; then \
     && echo "extension=zmq.so" > /usr/local/etc/php/conf.d/zmq.ini \
 ;fi
 
+
+############################################################################
+## Event:
+############################################################################
+USER root
+
+ARG INSTALL_EVENT=false
+
+RUN set -eux; \
+  if [ ${INSTALL_EVENT} = true ]; then \
+      curl -L -o  /tmp/libevent.tar.gz https://github.com/libevent/libevent/releases/download/release-2.1.12-stable/libevent-2.1.12-stable.tar.gz   &&\
+      mkdir -p /tmp/libevent-php &&\
+      tar -C /tmp/libevent-php -zxvf /tmp/libevent.tar.gz --strip 1 &&\
+      cd /tmp/libevent-php &&\
+      ./configure --prefix=/usr/local/libevent-2.1.12  &&\
+      make &&\
+      make install &&\
+      rm /tmp/libevent.tar.gz &&\
+      docker-php-ext-install sockets  &&\
+      curl -L -o /tmp/event.tar.gz http://pecl.php.net/get/event-3.0.6.tgz &&\
+      mkdir -p /tmp/event-php &&\
+      tar -C /tmp/event-php -zxvf /tmp/event.tar.gz --strip 1 &&\
+      cd /tmp/event-php &&\
+      phpize &&\
+      ./configure  --with-event-libevent-dir=/usr/local/libevent-2.1.12/ &&\
+      make &&\
+      make install &&\
+      rm /tmp/event.tar.gz &&\
+      docker-php-ext-enable event &&\
+      php -m  | grep -q 'event' \
+;fi
+
+###########################################################################
+# DNS utilities:
+###########################################################################
+
+USER root
+
+ARG INSTALL_DNSUTILS=false
+
+RUN if [ ${INSTALL_DNSUTILS} = true ]; then \
+    apt-get update && apt-get install -y dnsutils \
+;fi
+
 ###########################################################################
 # Check PHP version:
 ###########################################################################
 
-RUN set -xe; php -v | head -n 1 | grep -q "PHP ${LARADOCK_PHP_VERSION}."
+RUN set -xe; php -v | grep -q "PHP ${IVPLDOCK_PHP_VERSION}."
 
 #
 #--------------------------------------------------------------------------
@@ -1253,7 +1376,7 @@ USER root
 # Clean up
 RUN apt-get clean && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* && \
-    rm /var/log/lastlog /var/log/faillog
+    rm -f /var/log/lastlog /var/log/faillog
 
 # Configure non-root user.
 ARG PUID=1000

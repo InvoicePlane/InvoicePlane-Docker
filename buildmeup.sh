@@ -1,2 +1,2 @@
 #!/bin/bash
-docker-compose up nginx mysql php-fpm phpmyadmin redis workspace --build -d
+docker-compose --env-file .env.docker up beanstalkd beanstalkd-console mariadb nginx php-fpm phpmyadmin workspace --build

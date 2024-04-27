@@ -1,2 +1,3 @@
 #!/bin/bash
-docker exec -it --user=ivpldock $(docker ps -aqf "name=ivpldock-workspace") bash
+# shellcheck disable=SC2046
+docker exec --env-file .env.docker -it --user=ivpldock $(docker ps -aqf "name=workspace") bash
