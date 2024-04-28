@@ -74,7 +74,7 @@ $cfg['Servers'][$i]['hide_db'] = 'default|information_schema|mysql|performance_s
 /**
  * Directories for saving/loading files from server
  */
-$cfg['UploadDir'] = '';
+$cfg['UploadDir'] = '/var/www/html/tmp/ivpldock_databases/upload';
 $cfg['SaveDir'] = '';
 
 /**

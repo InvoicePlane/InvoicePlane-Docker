@@ -417,6 +417,9 @@ services:
 ### phpMyAdmin ###########################################
     phpmyadmin:
       build: ./.docker/phpmyadmin
+      volumes:
+      - ./.docker/phpmyadmin/config.user.inc.php:/etc/phpmyadmin/config.user.inc.php
+      - ./resources/databases:/var/www/html/tmp/ivpldock_databases
       environment:
         - PMA_ARBITRARY=1
         - MYSQL_USER=${PMA_USER}
