@@ -99,6 +99,7 @@ RUN sed -i 's/\r//' /root/aliases.sh && \
     echo "" >> ~/.bashrc && \
     echo "# Load Custom Aliases" >> ~/.bashrc && \
     echo "source ~/aliases.sh" >> ~/.bashrc && \
+    echo "export PS1='\W\$ '" >> ~/.bashrc && \
 	  echo "" >> ~/.bashrc
 
 USER ivpldock
@@ -106,6 +107,7 @@ USER ivpldock
 RUN echo "" >> ~/.bashrc && \
     echo "# Load Custom Aliases" >> ~/.bashrc && \
     echo "source ~/aliases.sh" >> ~/.bashrc && \
+    echo "export PS1='\W\$ '" >> ~/.bashrc && \
 	  echo "" >> ~/.bashrc
 
 ###########################################################################
