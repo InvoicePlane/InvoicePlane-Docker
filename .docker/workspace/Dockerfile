@@ -616,20 +616,19 @@ RUN if [ ${SHELL_OH_MY_ZSH} = true ]; then \
 	  echo "" >> ~/.zshrc \
 ;fi
 
-USER root
-
 #
 #--------------------------------------------------------------------------
 # Final Touches
 #--------------------------------------------------------------------------
 #
-
 USER root
 
 # Clean up
 RUN apt-get clean && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* && \
     rm -f /var/log/lastlog /var/log/faillog
+
+USER ivpldock
 
 # Set default work directory
 WORKDIR /var/www/projects
