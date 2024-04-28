@@ -40,8 +40,8 @@ ENV PGID ${PGID}
 RUN set -xe; \
     apt-get update -yqq && \
     pecl channel-update pecl.php.net && \
-    groupadd -g ${PGID} ivpldock && \
-    useradd -l -u ${PUID} -g ivpldock -m ivpldock -G docker_env && \
+    groupadd -g $PGID ivpldock && \
+    useradd -u $PUID -g ivpldock -m ivpldock && \
     usermod -p "*" ivpldock -s /bin/bash && \
     apt-get install -yqq \
       apt-utils \
@@ -627,8 +627,6 @@ USER root
 RUN apt-get clean && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* && \
     rm -f /var/log/lastlog /var/log/faillog
-
-USER ivpldock
 
 # Set default work directory
 WORKDIR /var/www/projects
