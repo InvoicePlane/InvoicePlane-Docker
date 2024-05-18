@@ -284,10 +284,11 @@ RUN if [ ${INSTALL_NODE} = true ]; then \
     mkdir -p $NVM_DIR && \
     curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.2/install.sh | bash \
         && . $NVM_DIR/nvm.sh \
+        && nvm install 16 \
         && nvm install 18 \
         && nvm install 20 \
-        && nvm use 20 \
-        && nvm alias 20 \
+        && nvm use 16 \
+        && nvm alias 16 \
         && npm cache clear --force \
         && npm config set fetch-retries ${NPM_FETCH_RETRIES} \
         && npm config set fetch-retry-factor ${NPM_FETCH_RETRY_FACTOR} \
