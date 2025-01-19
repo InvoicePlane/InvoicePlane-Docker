@@ -14,9 +14,14 @@
 
 ARG IVPLDOCK_PHP_VERSION
 ARG BASE_IMAGE_TAG_PREFIX=latest
-FROM laradock/workspace:${BASE_IMAGE_TAG_PREFIX}-8.2
+FROM laradock/workspace:${BASE_IMAGE_TAG_PREFIX}-${IVPLDOCK_PHP_VERSION}
 
 LABEL maintainer="Mahmoud Zalt <mahmoud@zalt.me>"
+
+ARG LARADOCK_PHP_VERSION
+
+# Set Environment Variables
+ENV DEBIAN_FRONTEND noninteractive
 
 # Start as root
 USER root
@@ -52,9 +57,9 @@ RUN set -xe; \
 
 RUN apt-get update -yqq && \
     apt-get install -yqq apt-utils libzip-dev zip unzip nano \
-    php8.2-imap php8.2-gmp \
-    php8.2-redis \
-    php8.2-zip \
+    php${IVPLDOCK_PHP_VERSION}-imap php${IVPLDOCK_PHP_VERSION}-gmp \
+    php${IVPLDOCK_PHP_VERSION}-redis \
+    php${IVPLDOCK_PHP_VERSION}-zip \
     libpng-dev libjpeg-dev \
     libpng16-16 \
     libmagickwand-dev imagemagick jpegoptim optipng pngquant gifsicle && \
@@ -93,6 +98,7 @@ RUN sed -i 's/\r//' /root/aliases.sh && \
     echo "" >> ~/.zshrc && \
     echo "# Load Custom Aliases" >> ~/.zshrc && \
     echo "source ~/aliases.sh" >> ~/.zshrc && \
+    echo "export PS1='\W\$ '" >> ~/.bashrc && \
     echo "" >> ~/.zshrc
 
 USER ${IVPLDOCK_USER}
@@ -108,73 +114,48 @@ ARG XDEBUG_CLIENT_HOST
 ARG XDEBUG_PORT=9003
 
 # ADD for REMOTE debugging
-COPY ./xdebug.ini /etc/php/8.2/cli/conf.d/xdebug.ini
+COPY ./xdebug.ini /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/xdebug.ini
+
 # Install the xdebug extension
 # https://xdebug.org/docs/compat
-  RUN apt-get install -yqq pkg-config php-xml php8.2-xml && \
+  RUN apt-get install -yqq pkg-config php-xml php${IVPLDOCK_PHP_VERSION}-xml && \
   pecl install xdebug-3.3.0; \
-  sed -i "s/xdebug.remote_host=/xdebug.client_host=/" /etc/php/8.2/cli/conf.d/xdebug.ini && \
-  sed -i "s/xdebug.remote_connect_back=0/xdebug.discover_client_host=false/" /etc/php/8.2/cli/conf.d/xdebug.ini && \
-  sed -i "s/xdebug.remote_port=9003/xdebug.client_port=${XDEBUG_PORT}/" /etc/php/8.2/cli/conf.d/xdebug.ini && \
-  sed -i "s/xdebug.profiler_enable=0/; xdebug.profiler_enable=0/" /etc/php/8.2/cli/conf.d/xdebug.ini && \
-  sed -i "s/xdebug.profiler_output_dir=/xdebug.output_dir=/" /etc/php/8.2/cli/conf.d/xdebug.ini && \
-  sed -i "s/xdebug.remote_mode=req/; xdebug.remote_mode=req/" /etc/php/8.2/cli/conf.d/xdebug.ini && \
-  sed -i "s/xdebug.remote_autostart=0/xdebug.start_with_request=yes/" /etc/php/8.2/cli/conf.d/xdebug.ini && \
-  sed -i "s/xdebug.remote_enable=0/xdebug.mode=debug/" /etc/php/8.2/cli/conf.d/xdebug.ini && \
-  sed -i "s/xdebug.cli_color=0/xdebug.cli_color=1/" /etc/php/8.2/cli/conf.d/xdebug.ini && \
-  echo "zend_extension=xdebug.so" > /etc/php/8.2/cli/conf.d/20-xdebug.ini && \
-  echo "xdebug.client_host=${XDEBUG_CLIENT_HOST:-172.17.0.1}" >> /etc/php/8.2/cli/conf.d/20-xdebug.ini && \
-  echo "xdebug.client_port=${XDEBUG_PORT}" >> /etc/php/8.2/cli/conf.d/20-xdebug.ini && \
-  echo "xdebug.mode=debug" >> /etc/php/8.2/cli/conf.d/20-xdebug.ini
+  sed -i "s/xdebug.remote_host=/xdebug.client_host=/" /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/xdebug.ini && \
+  sed -i "s/xdebug.remote_connect_back=0/xdebug.discover_client_host=false/" /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/xdebug.ini && \
+  sed -i "s/xdebug.remote_port=9003/xdebug.client_port=${XDEBUG_PORT}/" /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/xdebug.ini && \
+  sed -i "s/xdebug.profiler_enable=0/; xdebug.profiler_enable=0/" /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/xdebug.ini && \
+  sed -i "s/xdebug.profiler_output_dir=/xdebug.output_dir=/" /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/xdebug.ini && \
+  sed -i "s/xdebug.remote_mode=req/; xdebug.remote_mode=req/" /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/xdebug.ini && \
+  sed -i "s/xdebug.remote_autostart=0/xdebug.start_with_request=yes/" /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/xdebug.ini && \
+  sed -i "s/xdebug.remote_enable=0/xdebug.mode=debug/" /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/xdebug.ini && \
+  sed -i "s/xdebug.cli_color=0/xdebug.cli_color=1/" /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/xdebug.ini && \
+  echo "zend_extension=xdebug.so" > /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/20-xdebug.ini && \
+  echo "xdebug.client_host=${XDEBUG_CLIENT_HOST:-172.17.0.1}" >> /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/20-xdebug.ini && \
+  echo "xdebug.client_port=${XDEBUG_PORT}" >> /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/20-xdebug.ini && \
+  echo "xdebug.mode=debug" >> /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/20-xdebug.ini
 
+
+###########################################################################
+# pcov:
+###########################################################################
+# Install pcov for code coverage
+RUN pecl install pcov && \
+    echo "extension=pcov.so" >> /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/20-pcov.ini
+
+#echo "pcov.enabled" >> /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/20-pcov.ini
+
+###########################################################################
+# PHP REDIS EXTENSION
+###########################################################################
+
+ARG INSTALL_PHPREDIS=false
+
+RUN if [ ${INSTALL_PHPREDIS} = true ]; then \
+    apt-get update \
+    && apt-get install -yqq php${LARADOCK_PHP_VERSION}-redis \
+;fi
 
 USER root
-
-###########################################################################
-# PYTHON2:
-###########################################################################
-RUN apt-get -y install python python-dev build-essential  \
-  && curl https://bootstrap.pypa.io/pip/2.7/get-pip.py -o get-pip.py  \
-  && python get-pip.py  \
-  && rm get-pip.py  \
-  && python -m pip install --upgrade pip  \
-  && python -m pip install --upgrade virtualenv
-
-###########################################################################
-# PYTHON3:
-###########################################################################
-RUN apt-get -y install python3 python3-dev build-essential  \
-  && curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py  \
-  && python3 get-pip.py  \
-  && rm get-pip.py  \
-  && python3 -m pip install --upgrade --force-reinstall pip  \
-  && python3 -m pip install --upgrade virtualenv
-
-
-
-###########################################################################
-# ImageMagick:
-###########################################################################
-
-USER root
-
-ARG INSTALL_IMAGEMAGICK=false
-ARG IMAGEMAGICK_VERSION=latest
-ENV IMAGEMAGICK_VERSION ${IMAGEMAGICK_VERSION}
-
-RUN apt-get install -y libmagickwand-dev imagemagick && \
-      apt-get install -y git && \
-      cd /tmp && \
-      git clone https://github.com/Imagick/imagick; \
-      cd imagick && \
-      phpize && \
-      ./configure && \
-      make && \
-      make install && \
-      rm -r /tmp/imagick; \
-    echo "extension=imagick.so" >> /etc/php/8.2/mods-available/imagick.ini && \
-    ln -s /etc/php/8.2/mods-available/imagick.ini /etc/php/8.2/cli/conf.d/20-imagick.ini && \
-    php -m | grep -q 'imagick'
 
 ###########################################################################
 # Node / NVM:
@@ -194,9 +175,13 @@ RUN mkdir -p $NVM_DIR && \
 
 # Wouldn't execute when added to the RUN statement in the above block
 # Source NVM when loading bash since ~/.profile isn't loaded on non-login shell
+
 ###########################################################################
 # USER ivpldock:
 ###########################################################################
+
+USER ${IVPLDOCK_USER}
+
 RUN if [ ${INSTALL_NODE} = true ]; then \
     echo "" >> ~/.bashrc && \
     echo 'export NVM_DIR="$NVM_DIR/.nvm"' >> ~/.bashrc && \
@@ -248,20 +233,60 @@ RUN echo "" >> ~/.bashrc && \
 ENV PATH $PATH:/home/${IVPLDOCK_USER}/.yarn/bin
 
 ###########################################################################
+# PYTHON2:
+###########################################################################
+RUN apt-get -y install python python-dev build-essential  \
+  && curl https://bootstrap.pypa.io/pip/2.7/get-pip.py -o get-pip.py  \
+  && python get-pip.py  \
+  && rm get-pip.py  \
+  && python -m pip install --upgrade pip  \
+  && python -m pip install --upgrade virtualenv
+
+###########################################################################
+# PYTHON3:
+###########################################################################
+RUN apt-get -y install python3 python3-dev build-essential  \
+  && curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py  \
+  && python3 get-pip.py  \
+  && rm get-pip.py  \
+  && python3 -m pip install --upgrade --force-reinstall pip  \
+  && python3 -m pip install --upgrade virtualenv
+
+###########################################################################
+# ImageMagick:
+###########################################################################
+
+USER root
+
+ARG INSTALL_IMAGEMAGICK=false
+ARG IMAGEMAGICK_VERSION=latest
+ENV IMAGEMAGICK_VERSION ${IMAGEMAGICK_VERSION}
+
+RUN apt-get install -y libmagickwand-dev imagemagick && \
+      apt-get install -y git && \
+      cd /tmp && \
+      git clone https://github.com/Imagick/imagick; \
+      cd imagick && \
+      phpize && \
+      ./configure && \
+      make && \
+      make install && \
+      rm -r /tmp/imagick; \
+    echo "extension=imagick.so" >> /etc/php/${IVPLDOCK_PHP_VERSION}/mods-available/imagick.ini && \
+    ln -s /etc/php/${IVPLDOCK_PHP_VERSION}/mods-available/imagick.ini /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/20-imagick.ini && \
+    php -m | grep -q 'imagick'
+
+###########################################################################
 # Composer:
 ###########################################################################
 # Install Composer (non-global)
 COPY --from=composer:latest /usr/bin/composer /usr/local/bin/composer
 
-# Install pcov for code coverage
-RUN pecl install pcov && \
-    echo "extension=pcov.so" >> /etc/php/8.2/cli/conf.d/20-pcov.ini
-
 ###########################################################################
 # Check PHP version:
 ###########################################################################
 
-RUN set -xe; php -v | head -n 1 | grep -q "PHP 8.2."
+RUN set -xe; php -v | head -n 1 | grep -q "PHP ${IVPLDOCK_PHP_VERSION}."
 
 ###########################################################################
 # Oh My ZSH!
