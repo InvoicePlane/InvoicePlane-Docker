@@ -5,6 +5,7 @@
 /.env.docker
 /.project
 .docker-sync
+/.docker/workspace/Dockerfile.slim
 /jenkins/jenkins_home
 
 /logstash/pipeline/*.conf
