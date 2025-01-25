@@ -276,16 +276,16 @@ ARG INSTALL_XDEBUG=false
 ARG XDEBUG_CLIENT_HOST
 ARG XDEBUG_PORT=9003
 
-RUN apt-get install -yqq pkg-config php-xml php8.1-xml && \
+RUN apt-get install -yqq pkg-config php-xml php${IVPLDOCK_PHP_VERSION}-xml && \
   pecl install xdebug-3.3.0 && \
-  echo "zend_extension=xdebug.so" >> /etc/php/8.1/cli/conf.d/20-xdebug.ini
+  echo "zend_extension=xdebug.so" >> /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/20-xdebug.ini
 
 RUN echo "##### PHP Version #####" \
     ${IVPLDOCK_PHP_VERSION} \
     "##### /PHP Version #####"
 
 # ADD for REMOTE debugging
-COPY ./xdebug.ini /etc/php/8.1/cli/conf.d/xdebug.ini
+COPY ./xdebug.ini /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/xdebug.ini
 
 RUN if [ $(php -r "echo PHP_MAJOR_VERSION;") = "8" ] || { [ $(php -r "echo PHP_MAJOR_VERSION;") = "7" ] && { [ $(php -r "echo PHP_MINOR_VERSION;") = "4" ] || [ $(php -r "echo PHP_MINOR_VERSION;") = "3" ] ;} ;}; then \
   sed -i "s/xdebug.remote_host=/xdebug.client_host=/" /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/xdebug.ini && \
