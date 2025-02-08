@@ -1,4 +1,4 @@
-FROM phpmyadmin
+FROM phpmyadmin:5.2.2-fpm-alpine
 
 LABEL maintainer="Bo-Yi Wu <appleboy.tw@gmail.com>"
 
