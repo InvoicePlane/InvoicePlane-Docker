@@ -1397,6 +1397,8 @@ RUN if [ ${INSTALL_FAKETIME} = true ]; then \
 ARG LOCALE=POSIX
 ENV LC_ALL ${LOCALE}
 
+RUN echo "php_admin_value[memory_limit] = 1024M" >> /usr/local/etc/php-fpm.d/www.conf
+
 WORKDIR /var/www/projects
 
 CMD ["php-fpm"]
