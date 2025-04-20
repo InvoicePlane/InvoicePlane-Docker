@@ -148,6 +148,7 @@ services:
       volumes:
         - ${APP_CODE_PATH_HOST}:${APP_CODE_PATH_CONTAINER}${APP_CODE_CONTAINER_FLAG}
         - docker-in-docker:/certs/client
+        - /data/tenants:/tenants
         - ./.docker/php-worker/supervisord.d:/etc/supervisord.d
       extra_hosts:
         - "host.docker.internal:host-gateway"
@@ -266,6 +267,7 @@ services:
       volumes:
         - ./.docker/php-fpm/php${PHP_VERSION}.ini:/usr/local/etc/php/php.ini
         - ${APP_CODE_PATH_HOST}:${APP_CODE_PATH_CONTAINER}${APP_CODE_CONTAINER_FLAG}
+        - /data/tenants:/tenants
         - docker-in-docker:/certs/client
       expose:
         - "9000"
