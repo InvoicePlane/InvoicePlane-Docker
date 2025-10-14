@@ -4,12 +4,12 @@
 #--------------------------------------------------------------------------
 #
 
-ARG ivpldock_PHP_VERSION
-FROM php:${ivpldock_PHP_VERSION}-alpine
+ARG devdock_PHP_VERSION
+FROM php:${devdock_PHP_VERSION}-alpine
 
 LABEL maintainer="Mahmoud Zalt <mahmoud@zalt.me>"
 
-ARG ivpldock_PHP_VERSION
+ARG devdock_PHP_VERSION
 
 # If you're in China, or you need to change sources, will be set CHANGE_SOURCE to true in .env.
 
@@ -55,8 +55,8 @@ ENV PUID ${PUID}
 ARG PGID=1000
 ENV PGID ${PGID}
 
-RUN addgroup -g ${PGID} ivpldock && \
-    adduser -D -G ivpldock -u ${PUID} ivpldock
+RUN addgroup -g ${PGID} devdock && \
+    adduser -D -G devdock -u ${PUID} devdock
 
 #Install BZ2:
 ARG INSTALL_BZ2=false
@@ -156,7 +156,7 @@ ARG INSTALL_ZIP_ARCHIVE=false
 RUN set -eux; \
   if [ ${INSTALL_ZIP_ARCHIVE} = true ]; then \
     apk --update add libzip-dev && \
-    if [ ${ivpldock_PHP_VERSION} = "7.3" ] || [ ${ivpldock_PHP_VERSION} = "7.4" ] || [ $(php -r "echo PHP_MAJOR_VERSION;") = "8" ]; then \
+    if [ ${devdock_PHP_VERSION} = "7.3" ] || [ ${devdock_PHP_VERSION} = "7.4" ] || [ $(php -r "echo PHP_MAJOR_VERSION;") = "8" ]; then \
       docker-php-ext-configure zip; \
     else \
       docker-php-ext-configure zip --with-libzip; \

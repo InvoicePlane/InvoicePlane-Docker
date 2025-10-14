@@ -7,18 +7,18 @@
 #    https://github.com/Laradock/workspace
 #
 # To change its version, see the available Tags on the Docker Hub:
-#    https://hub.docker.com/r/ivpldock/workspace/tags/
+#    https://hub.docker.com/r/devdock/workspace/tags/
 #
 # Note: Base Image name format {image-tag}-{php-version}
 #
 
-ARG IVPLDOCK_PHP_VERSION
+ARG DEVDOCK_PHP_VERSION
 ARG BASE_IMAGE_TAG_PREFIX=latest
-FROM laradock/workspace:${BASE_IMAGE_TAG_PREFIX}-${IVPLDOCK_PHP_VERSION}
+FROM laradock/workspace:${BASE_IMAGE_TAG_PREFIX}-${DEVDOCK_PHP_VERSION}
 
 LABEL maintainer="Mahmoud Zalt <mahmoud@zalt.me>"
 
-ARG IVPLDOCK_PHP_VERSION
+ARG DEVDOCK_PHP_VERSION
 
 # Set Environment Variables
 ENV DEBIAN_FRONTEND noninteractive
@@ -27,7 +27,7 @@ ENV DEBIAN_FRONTEND noninteractive
 USER root
 
 # Set up default environment variables, sourcing from .env where possible
-ARG IVPLDOCK_USER
+ARG DEVDOCK_USER
 ARG WORKSPACE_WORKDIR
 ARG TIMEZONE
 ARG NODE_VERSION
@@ -43,38 +43,58 @@ ENV DEBIAN_FRONTEND=noninteractive \
     TZ=${TIMEZONE:-UTC} \
     PUID=1000 \
     PGID=1000 \
-    IVPLDOCK_USER=${IVPLDOCK_USER:-ivpldock} \
+    DEVDOCK_USER=${DEVDOCK_USER:-devdock} \
     WORKDIR=${WORKSPACE_WORKDIR:-/var/www/projects} \
     NODE_VERSION=${NODE_VERSION:-18} \
     XDEBUG_PORT=${XDEBUG_PORT:-9003} \
     VITE_PORT=${WORKSPACE_VITE_PORT:-5173}
 
-# always run apt update when start and after add new source list, then clean up at end.
-RUN set -xe; \
-    apt-get update -yqq && \
-    pecl channel-update pecl.php.net && \
-    groupadd -g ${PGID} ivpldock && \
-    useradd -l -u ${PUID} -g ivpldock -m ivpldock -G docker_env && \
-    usermod -p "*" ivpldock -s /bin/bash && \
-    apt-get install -yqq \
-      apt-utils \
-      #
-      #--------------------------------------------------------------------------
-      # Mandatory Software's Installation
-      #--------------------------------------------------------------------------
-      #
-      # Mandatory Software's such as ("php-cli", "git", "vim", ....) are
-      # installed on the base image 'ivpldock/workspace' image. If you want
-      # to add more Software's or remove existing one, you need to edit the
-      # base image (https://github.com/Laradock/workspace).
-      #
-      # next lines are here because there is no auto build on dockerhub see https://github.com/ivpldock/ivpldock/pull/1903#issuecomment-463142846
-      libzip-dev zip unzip \
-      # Install the zip extension
-      php${IVPLDOCK_PHP_VERSION}-zip \
-      # nasm
-      nasm && \
-      php -m | grep -q 'zip'
+# expects: ARG PUID=1000 PGID=1000 DEVDOCK_PHP_VERSION=8.3
+RUN set -eux; \
+  apt-get update -yqq; \
+  pecl channel-update pecl.php.net; \
+  \
+  # -------- group: ensure "devdock" is GID=$PGID --------
+  EXISTING_GRP_BY_GID="$(getent group "${PGID}" | cut -d: -f1 || true)"; \
+  if [ -n "${EXISTING_GRP_BY_GID}" ]; then \
+    [ "${EXISTING_GRP_BY_GID}" = "devdock" ] || groupmod -n devdock "${EXISTING_GRP_BY_GID}"; \
+  elif getent group devdock >/dev/null; then \
+    groupmod -g "${PGID}" devdock; \
+  else \
+    groupadd -g "${PGID}" devdock; \
+  fi; \
+  \
+  # Always have this secondary group available
+  groupadd -f docker_env; \
+  \
+  # -------- user: ensure "devdock" is UID=$PUID and primary group devdock --------
+  EXISTING_USER_BY_UID="$(getent passwd "${PUID}" | cut -d: -f1 || true)"; \
+  if [ -n "${EXISTING_USER_BY_UID}" ] && [ "${EXISTING_USER_BY_UID}" != "devdock" ]; then \
+    # UID 1000 belongs to e.g. 'ubuntu' -> rename to 'devdock' and move home
+    usermod -l devdock "${EXISTING_USER_BY_UID}"; \
+    usermod -d /home/devdock -m devdock; \
+    usermod -g devdock devdock; \
+  elif id -u devdock >/dev/null 2>&1; then \
+    # 'devdock' exists but wrong UID -> align UID
+    CURRENT_UID="$(id -u devdock)"; \
+    [ "${CURRENT_UID}" = "${PUID}" ] || usermod -u "${PUID}" devdock; \
+    usermod -g devdock devdock; \
+  else \
+    # no owner of UID 1000 and no 'devdock' -> create fresh
+    useradd -l -u "${PUID}" -g devdock -m -s /bin/bash devdock; \
+  fi; \
+  \
+  # add supplemental group; set shell just in case
+  usermod -aG docker_env devdock; \
+  chsh -s /bin/bash devdock; \
+  \
+  # -------- packages & php-zip check --------
+  apt-get install -yqq --no-install-recommends \
+    apt-utils \
+    libzip-dev zip unzip \
+    php${DEVDOCK_PHP_VERSION}-zip \
+    nasm; \
+  php -m | grep -q '^zip$'
 
 #
 #--------------------------------------------------------------------------
@@ -104,18 +124,18 @@ RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 USER root
 
 COPY ./aliases.sh /root/aliases.sh
-COPY ./aliases.sh /home/ivpldock/aliases.sh
+COPY ./aliases.sh /home/devdock/aliases.sh
 
 RUN sed -i 's/\r//' /root/aliases.sh && \
-    sed -i 's/\r//' /home/ivpldock/aliases.sh && \
-    chown ivpldock:ivpldock /home/ivpldock/aliases.sh && \
+    sed -i 's/\r//' /home/devdock/aliases.sh && \
+    chown devdock:devdock /home/devdock/aliases.sh && \
     echo "" >> ~/.bashrc && \
     echo "# Load Custom Aliases" >> ~/.bashrc && \
     echo "export PS1='\W\$ '" >> ~/.bashrc && \
     echo "source ~/aliases.sh" >> ~/.bashrc && \
     echo "" >> ~/.bashrc
 
-USER ivpldock
+USER devdock
 
 RUN echo "" >> ~/.bashrc && \
     echo "# Load Custom Aliases" >> ~/.bashrc && \
@@ -130,13 +150,13 @@ RUN echo "" >> ~/.bashrc && \
 USER root
 
 # Add the composer.json
-COPY ./composer.json /home/ivpldock/.composer/composer.json
+COPY ./composer.json /home/devdock/.composer/composer.json
 
 # Add the auth.json for magento 2 credentials
-COPY ./auth.json /home/ivpldock/.composer/auth.json
+COPY ./auth.json /home/devdock/.composer/auth.json
 
-# Make sure that ~/.composer belongs to ivpldock
-RUN chown -R ivpldock:ivpldock /home/ivpldock/.composer
+# Make sure that ~/.composer belongs to devdock
+RUN chown -R devdock:devdock /home/devdock/.composer
 
 # Export composer vendor path
 RUN echo "" >> ~/.bashrc && \
@@ -148,7 +168,7 @@ ENV COMPOSER_VERSION ${COMPOSER_VERSION}
 RUN set -eux; \
   composer self-update --${COMPOSER_VERSION};
 
-USER ivpldock
+USER devdock
 
 # Check if global install need to be ran
 ARG COMPOSER_GLOBAL_INSTALL=false
@@ -165,7 +185,7 @@ ENV COMPOSER_AUTH_JSON ${COMPOSER_AUTH_JSON}
 
 RUN if [ ${COMPOSER_AUTH_JSON} = false ]; then \
     # remove the file
-    rm /home/ivpldock/.composer/auth.json \
+    rm /home/devdock/.composer/auth.json \
 ;fi
 
 ARG COMPOSER_REPO_PACKAGIST
@@ -184,7 +204,7 @@ RUN echo "" >> ~/.bashrc && \
 ###########################################################################
 
 # add ./vendor/bin to non-root user's bashrc (needed for phpunit)
-USER ivpldock
+USER devdock
 
 RUN echo "" >> ~/.bashrc && \
     echo 'export PATH="/var/www/vendor/bin:$PATH"' >> ~/.bashrc
@@ -208,48 +228,48 @@ ARG INSTALL_GNUPG=false
 ARG INSTALL_SSH2=false
 ARG INSTALL_SOAP=false
 ARG INSTALL_XSL=false
-ARG PHP_VERSION=${IVPLDOCK_PHP_VERSION}
+ARG PHP_VERSION=${DEVDOCK_PHP_VERSION}
 
 RUN set -eux; \
     ###########################################################################
     # BZ2:
     ###########################################################################
     if [ ${INSTALL_BZ2} = true ]; then \
-      apt-get -yqq install php${IVPLDOCK_PHP_VERSION}-bz2; \
+      apt-get -yqq install php${DEVDOCK_PHP_VERSION}-bz2; \
     fi; \
     ###########################################################################
     # GMP (GNU Multiple Precision):
     ###########################################################################
     if [ ${INSTALL_GMP} = true ]; then \
       # Install the PHP GMP extension
-      apt-get -yqq install php${IVPLDOCK_PHP_VERSION}-gmp; \
+      apt-get -yqq install php${DEVDOCK_PHP_VERSION}-gmp; \
     fi; \
     ###########################################################################
     # GnuPG:
     ###########################################################################
     if [ ${INSTALL_GNUPG} = true ]; then \
-        apt-get -yqq install php${IVPLDOCK_PHP_VERSION}-gnupg; \
+        apt-get -yqq install php${DEVDOCK_PHP_VERSION}-gnupg; \
     fi; \
     ###########################################################################
     # SSH2:
     ###########################################################################
     if [ ${INSTALL_SSH2} = true ]; then \
       # Install the PHP SSH2 extension
-      apt-get -yqq install libssh2-1-dev php${IVPLDOCK_PHP_VERSION}-ssh2; \
+      apt-get -yqq install libssh2-1-dev php${DEVDOCK_PHP_VERSION}-ssh2; \
     fi; \
     ###########################################################################
     # SOAP:
     ###########################################################################
     if [ ${INSTALL_SOAP} = true ]; then \
       # Install the PHP SOAP extension
-      apt-get -yqq install libxml2-dev php${IVPLDOCK_PHP_VERSION}-soap; \
+      apt-get -yqq install libxml2-dev php${DEVDOCK_PHP_VERSION}-soap; \
     fi; \
     ###########################################################################
     # XSL:
     ###########################################################################
     if [ ${INSTALL_XSL} = true ]; then \
       # Install the PHP XSL extension
-      apt-get -yqq install libxslt-dev php${IVPLDOCK_PHP_VERSION}-xsl; \
+      apt-get -yqq install libxslt-dev php${DEVDOCK_PHP_VERSION}-xsl; \
     fi
 
 ###########################################################################
@@ -264,7 +284,7 @@ RUN set -eux; \
     # IMAP:
     ###########################################################################
     if [ ${INSTALL_IMAP} = true ]; then \
-        apt-get install -yqq php${IVPLDOCK_PHP_VERSION}-imap; \
+        apt-get install -yqq php${DEVDOCK_PHP_VERSION}-imap; \
     fi;
 
 ###########################################################################
@@ -280,31 +300,31 @@ ARG INSTALL_XDEBUG=false
 ARG XDEBUG_CLIENT_HOST
 ARG XDEBUG_PORT=9003
 
-RUN apt-get install -yqq pkg-config php-xml php${IVPLDOCK_PHP_VERSION}-xml && \
+RUN apt-get install -yqq pkg-config php-xml php${DEVDOCK_PHP_VERSION}-xml && \
   pecl install xdebug-3.3.0 && \
-  echo "zend_extension=xdebug.so" >> /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/20-xdebug.ini
+  echo "zend_extension=xdebug.so" >> /etc/php/${DEVDOCK_PHP_VERSION}/cli/conf.d/20-xdebug.ini
 
 RUN echo "##### PHP Version #####" \
-    ${IVPLDOCK_PHP_VERSION} \
+    ${DEVDOCK_PHP_VERSION} \
     "##### /PHP Version #####"
 
 # ADD for REMOTE debugging
-COPY ./xdebug.ini /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/xdebug.ini
+COPY ./xdebug.ini /etc/php/${DEVDOCK_PHP_VERSION}/cli/conf.d/xdebug.ini
 
 RUN if [ $(php -r "echo PHP_MAJOR_VERSION;") = "8" ] || { [ $(php -r "echo PHP_MAJOR_VERSION;") = "7" ] && { [ $(php -r "echo PHP_MINOR_VERSION;") = "4" ] || [ $(php -r "echo PHP_MINOR_VERSION;") = "3" ] ;} ;}; then \
-  sed -i "s/xdebug.remote_host=/xdebug.client_host=/" /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/xdebug.ini && \
-  sed -i "s/xdebug.remote_connect_back=0/xdebug.discover_client_host=false/" /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/xdebug.ini && \
-  sed -i "s/xdebug.remote_port=9000/xdebug.client_port=${XDEBUG_PORT}/" /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/xdebug.ini && \
-  sed -i "s/xdebug.profiler_enable=0/; xdebug.profiler_enable=0/" /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/xdebug.ini && \
-  sed -i "s/xdebug.profiler_output_dir=/xdebug.output_dir=/" /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/xdebug.ini && \
-  sed -i "s/xdebug.remote_mode=req/; xdebug.remote_mode=req/" /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/xdebug.ini && \
-  sed -i "s/xdebug.remote_autostart=0/xdebug.start_with_request=yes/" /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/xdebug.ini && \
-  sed -i "s/xdebug.remote_enable=0/xdebug.mode=debug/" /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/xdebug.ini \
+  sed -i "s/xdebug.remote_host=/xdebug.client_host=/" /etc/php/${DEVDOCK_PHP_VERSION}/cli/conf.d/xdebug.ini && \
+  sed -i "s/xdebug.remote_connect_back=0/xdebug.discover_client_host=false/" /etc/php/${DEVDOCK_PHP_VERSION}/cli/conf.d/xdebug.ini && \
+  sed -i "s/xdebug.remote_port=9000/xdebug.client_port=${XDEBUG_PORT}/" /etc/php/${DEVDOCK_PHP_VERSION}/cli/conf.d/xdebug.ini && \
+  sed -i "s/xdebug.profiler_enable=0/; xdebug.profiler_enable=0/" /etc/php/${DEVDOCK_PHP_VERSION}/cli/conf.d/xdebug.ini && \
+  sed -i "s/xdebug.profiler_output_dir=/xdebug.output_dir=/" /etc/php/${DEVDOCK_PHP_VERSION}/cli/conf.d/xdebug.ini && \
+  sed -i "s/xdebug.remote_mode=req/; xdebug.remote_mode=req/" /etc/php/${DEVDOCK_PHP_VERSION}/cli/conf.d/xdebug.ini && \
+  sed -i "s/xdebug.remote_autostart=0/xdebug.start_with_request=yes/" /etc/php/${DEVDOCK_PHP_VERSION}/cli/conf.d/xdebug.ini && \
+  sed -i "s/xdebug.remote_enable=0/xdebug.mode=debug/" /etc/php/${DEVDOCK_PHP_VERSION}/cli/conf.d/xdebug.ini \
 ;else \
-  sed -i "s/xdebug.remote_autostart=0/xdebug.remote_autostart=1/" /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/xdebug.ini && \
-  sed -i "s/xdebug.remote_enable=0/xdebug.remote_enable=1/" /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/xdebug.ini \
+  sed -i "s/xdebug.remote_autostart=0/xdebug.remote_autostart=1/" /etc/php/${DEVDOCK_PHP_VERSION}/cli/conf.d/xdebug.ini && \
+  sed -i "s/xdebug.remote_enable=0/xdebug.remote_enable=1/" /etc/php/${DEVDOCK_PHP_VERSION}/cli/conf.d/xdebug.ini \
 ;fi
-RUN sed -i "s/xdebug.cli_color=0/xdebug.cli_color=1/" /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/xdebug.ini
+RUN sed -i "s/xdebug.cli_color=0/xdebug.cli_color=1/" /etc/php/${DEVDOCK_PHP_VERSION}/cli/conf.d/xdebug.ini
 
 ###########################################################################
 # pcov:
@@ -314,9 +334,9 @@ USER root
 
 # Install pcov for code coverage
 RUN pecl install pcov && \
-    echo "extension=pcov.so" >> /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/20-pcov.ini
+    echo "extension=pcov.so" >> /etc/php/${DEVDOCK_PHP_VERSION}/cli/conf.d/20-pcov.ini
 
-#echo "pcov.enabled" >> /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/20-pcov.ini
+#echo "pcov.enabled" >> /etc/php/${DEVDOCK_PHP_VERSION}/cli/conf.d/20-pcov.ini
 
 ###########################################################################
 # PHPREDIS EXTENSION
@@ -326,7 +346,7 @@ ARG INSTALL_PHPREDIS=false
 
 RUN if [ ${INSTALL_PHPREDIS} = true ]; then \
     apt-get update \
-    && apt-get install -yqq php${IVPLDOCK_PHP_VERSION}-redis \
+    && apt-get install -yqq php${DEVDOCK_PHP_VERSION}-redis \
 ;fi
 
 ###########################################################################
@@ -348,12 +368,12 @@ ARG INSTALL_INOTIFY=false
 RUN if [ ${INSTALL_INOTIFY} = true ]; then \
     if [ $(php -r "echo PHP_MAJOR_VERSION;") = "5" ]; then \
       pecl -q install inotify-0.1.6 && \
-      echo "extension=inotify.so" >> /etc/php/${IVPLDOCK_PHP_VERSION}/mods-available/inotify.ini && \
-      ln -s /etc/php/${IVPLDOCK_PHP_VERSION}/mods-available/inotify.ini /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/20-inotify.ini; \
+      echo "extension=inotify.so" >> /etc/php/${DEVDOCK_PHP_VERSION}/mods-available/inotify.ini && \
+      ln -s /etc/php/${DEVDOCK_PHP_VERSION}/mods-available/inotify.ini /etc/php/${DEVDOCK_PHP_VERSION}/cli/conf.d/20-inotify.ini; \
     else \
       pecl -q install inotify && \
-      echo "extension=inotify.so" >> /etc/php/${IVPLDOCK_PHP_VERSION}/mods-available/inotify.ini && \
-      ln -s /etc/php/${IVPLDOCK_PHP_VERSION}/mods-available/inotify.ini /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/20-inotify.ini \
+      echo "extension=inotify.so" >> /etc/php/${DEVDOCK_PHP_VERSION}/mods-available/inotify.ini && \
+      ln -s /etc/php/${DEVDOCK_PHP_VERSION}/mods-available/inotify.ini /etc/php/${DEVDOCK_PHP_VERSION}/cli/conf.d/20-inotify.ini \
     ;fi \
 ;fi
 
@@ -370,7 +390,7 @@ RUN if [ ${INSTALL_FSWATCH} = true ]; then \
     && apt-get -y install fswatch \
 ;fi
 
-USER ivpldock
+USER devdock
 
 ###########################################################################
 # Node / NVM:
@@ -392,7 +412,7 @@ ARG NPM_FETCH_RETRY_MINTIMEOUT
 ENV NPM_FETCH_RETRY_MINTIMEOUT ${NPM_FETCH_RETRY_MINTIMEOUT}
 ARG NPM_FETCH_RETRY_MAXTIMEOUT
 ENV NPM_FETCH_RETRY_MAXTIMEOUT ${NPM_FETCH_RETRY_MAXTIMEOUT}
-ENV NVM_DIR /home/ivpldock/.nvm
+ENV NVM_DIR /home/devdock/.nvm
 ARG NVM_NODEJS_ORG_MIRROR
 ENV NVM_NODEJS_ORG_MIRROR ${NVM_NODEJS_ORG_MIRROR}
 
@@ -414,7 +434,7 @@ RUN echo "" >> ~/.bashrc && \
 USER root
 
 RUN echo "" >> ~/.bashrc && \
-    echo 'export NVM_DIR="/home/ivpldock/.nvm"' >> ~/.bashrc && \
+    echo 'export NVM_DIR="/home/devdock/.nvm"' >> ~/.bashrc && \
     echo '[ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"  # This loads nvm' >> ~/.bashrc
 
 # Make it so the node modules can be executed with 'docker-compose exec'
@@ -427,13 +447,13 @@ RUN find $NVM_DIR -type f -name node -exec ln -s {} /usr/local/bin/node \; && \
 
 # Mount .npmrc into home folder
 COPY ./.npmrc /root/.npmrc
-COPY ./.npmrc /home/${IVPLDOCK_USER}/.npmrc
+COPY ./.npmrc /home/${DEVDOCK_USER}/.npmrc
 
 ###########################################################################
 # YARN:
 ###########################################################################
 
-USER ${IVPLDOCK_USER}
+USER ${DEVDOCK_USER}
 
 ARG INSTALL_YARN=false
 ARG YARN_VERSION=latest
@@ -450,11 +470,11 @@ RUN [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh" && \
 USER root
 
 RUN echo "" >> ~/.bashrc && \
-    echo 'export YARN_DIR="/home/${IVPLDOCK_USER}/.yarn"' >> ~/.bashrc && \
+    echo 'export YARN_DIR="/home/${DEVDOCK_USER}/.yarn"' >> ~/.bashrc && \
     echo 'export PATH="$YARN_DIR/bin:$PATH"' >> ~/.bashrc
 
 # Add PATH for YARN
-ENV PATH $PATH:/home/${IVPLDOCK_USER}/.yarn/bin
+ENV PATH $PATH:/home/${DEVDOCK_USER}/.yarn/bin
 
 USER root
 
@@ -473,7 +493,7 @@ RUN if [ ${INSTALL_IMAGE_OPTIMIZERS} = true ]; then \
     ;fi\
 ;fi
 
-USER ivpldock
+USER devdock
 
 ###########################################################################
 # PYTHON2:
@@ -506,7 +526,7 @@ RUN if [ ${INSTALL_PYTHON3} = true ]; then \
   && python3 -m pip install --upgrade virtualenv \
 ;fi
 
-USER ivpldock
+USER devdock
 
 ###########################################################################
 # ImageMagick:
@@ -537,8 +557,8 @@ RUN if [ ${INSTALL_IMAGEMAGICK} = true ]; then \
     else \
       pecl install imagick; \
     fi && \
-    echo "extension=imagick.so" >> /etc/php/${IVPLDOCK_PHP_VERSION}/mods-available/imagick.ini && \
-    ln -s /etc/php/${IVPLDOCK_PHP_VERSION}/mods-available/imagick.ini /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/20-imagick.ini && \
+    echo "extension=imagick.so" >> /etc/php/${DEVDOCK_PHP_VERSION}/mods-available/imagick.ini && \
+    ln -s /etc/php/${DEVDOCK_PHP_VERSION}/mods-available/imagick.ini /etc/php/${DEVDOCK_PHP_VERSION}/cli/conf.d/20-imagick.ini && \
     php -m | grep -q 'imagick' \
 ;fi
 
@@ -601,7 +621,7 @@ RUN if [ ${INSTALL_GIT_PROMPT} = true ]; then \
 # Check PHP version:
 ###########################################################################
 
-RUN set -xe; php -v | head -n 1 | grep -q "PHP ${IVPLDOCK_PHP_VERSION}."
+RUN set -xe; php -v | head -n 1 | grep -q "PHP ${DEVDOCK_PHP_VERSION}."
 
 ###########################################################################
 # Oh My ZSH!
@@ -617,10 +637,10 @@ RUN if [ ${SHELL_OH_MY_ZSH} = true ]; then \
 ARG SHELL_OH_MY_ZSH_AUTOSUGESTIONS=false
 ARG SHELL_OH_MY_ZSH_ALIASES=false
 
-USER ivpldock
+USER devdock
 RUN if [ ${SHELL_OH_MY_ZSH} = true ]; then \
     sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh) --keep-zshrc" && \
-    sed -i -r 's/^plugins=\(.*?\)$/plugins=(laravel composer)/' /home/ivpldock/.zshrc && \
+    sed -i -r 's/^plugins=\(.*?\)$/plugins=(laravel composer)/' /home/devdock/.zshrc && \
     echo '\n\
 bindkey "^[OB" down-line-or-search\n\
 bindkey "^[OC" forward-char\n\
@@ -632,20 +652,20 @@ bindkey "^[[3~" delete-char\n\
 bindkey "^[[4~" end-of-line\n\
 bindkey "^[[5~" up-line-or-history\n\
 bindkey "^[[6~" down-line-or-history\n\
-bindkey "^?" backward-delete-char\n' >> /home/ivpldock/.zshrc && \
+bindkey "^?" backward-delete-char\n' >> /home/devdock/.zshrc && \
   if [ ${SHELL_OH_MY_ZSH_AUTOSUGESTIONS} = true ]; then \
-    sh -c "git clone https://github.com/zsh-users/zsh-autosuggestions /home/ivpldock/.oh-my-zsh/custom/plugins/zsh-autosuggestions" && \
-    sed -i 's~plugins=(~plugins=(zsh-autosuggestions ~g' /home/ivpldock/.zshrc && \
-    sed -i '1iZSH_AUTOSUGGEST_BUFFER_MAX_SIZE=20' /home/ivpldock/.zshrc && \
-    sed -i '1iZSH_AUTOSUGGEST_STRATEGY=(history completion)' /home/ivpldock/.zshrc && \
-    sed -i '1iZSH_AUTOSUGGEST_USE_ASYNC=1' /home/ivpldock/.zshrc && \
-    sed -i '1iTERM=xterm-256color' /home/ivpldock/.zshrc \
+    sh -c "git clone https://github.com/zsh-users/zsh-autosuggestions /home/devdock/.oh-my-zsh/custom/plugins/zsh-autosuggestions" && \
+    sed -i 's~plugins=(~plugins=(zsh-autosuggestions ~g' /home/devdock/.zshrc && \
+    sed -i '1iZSH_AUTOSUGGEST_BUFFER_MAX_SIZE=20' /home/devdock/.zshrc && \
+    sed -i '1iZSH_AUTOSUGGEST_STRATEGY=(history completion)' /home/devdock/.zshrc && \
+    sed -i '1iZSH_AUTOSUGGEST_USE_ASYNC=1' /home/devdock/.zshrc && \
+    sed -i '1iTERM=xterm-256color' /home/devdock/.zshrc \
   ;fi && \
   if [ ${SHELL_OH_MY_ZSH_ALIASES} = true ]; then \
-    echo "" >> /home/ivpldock/.zshrc && \
-    echo "# Load Custom Aliases" >> /home/ivpldock/.zshrc && \
-    echo "source /home/ivpldock/aliases.sh" >> /home/ivpldock/.zshrc && \
-    echo "" >> /home/ivpldock/.zshrc \
+    echo "" >> /home/devdock/.zshrc && \
+    echo "# Load Custom Aliases" >> /home/devdock/.zshrc && \
+    echo "source /home/devdock/aliases.sh" >> /home/devdock/.zshrc && \
+    echo "" >> /home/devdock/.zshrc \
   ;fi \
 ;fi
 
@@ -658,19 +678,19 @@ USER root
 USER root
 
 COPY ./aliases.sh /root/aliases.sh
-COPY ./aliases.sh /home/ivpldock/aliases.sh
+COPY ./aliases.sh /home/devdock/aliases.sh
 
 RUN if [ ${SHELL_OH_MY_ZSH} = true ]; then \
     sed -i 's/\r//' /root/aliases.sh && \
-    sed -i 's/\r//' /home/ivpldock/aliases.sh && \
-    chown ivpldock:ivpldock /home/ivpldock/aliases.sh && \
+    sed -i 's/\r//' /home/devdock/aliases.sh && \
+    chown devdock:devdock /home/devdock/aliases.sh && \
     echo "" >> ~/.zshrc && \
     echo "# Load Custom Aliases" >> ~/.zshrc && \
     echo "source ~/aliases.sh" >> ~/.zshrc && \
 	  echo "" >> ~/.zshrc \
 ;fi
 
-USER ivpldock
+USER devdock
 
 RUN if [ ${SHELL_OH_MY_ZSH} = true ]; then \
     echo "" >> ~/.zshrc && \

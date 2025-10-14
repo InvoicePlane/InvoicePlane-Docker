@@ -4,12 +4,12 @@
 #--------------------------------------------------------------------------
 #
 
-ARG IVPLDOCK_PHP_VERSION
-FROM php:${IVPLDOCK_PHP_VERSION}-alpine
+ARG DEVDOCK_PHP_VERSION
+FROM php:${DEVDOCK_PHP_VERSION}-alpine
 
 LABEL maintainer="Mahmoud Zalt <mahmoud@zalt.me>"
 
-ARG IVPLDOCK_PHP_VERSION
+ARG DEVDOCK_PHP_VERSION
 
 # If you're in China, or you need to change sources, will be set CHANGE_SOURCE to true in .env.
 
@@ -75,7 +75,7 @@ ARG INSTALL_GNUPG=false
 RUN set -eux; \
   if [ ${INSTALL_GNUPG} = true ]; then \
     apk add --no-cache --no-progress --virtual BUILD_DEPS_PHP_GNUPG gpgme-dev; \
-    if [ ${IVPLDOCK_PHP_VERSION} = "7.0" ]; then \
+    if [ ${DEVDOCK_PHP_VERSION} = "7.0" ]; then \
       wget -O /tmp/gnupg.tgz "https://pecl.php.net/get/gnupg-1.5.1.tgz"; \
       mkdir -p /tmp/gnupg; \
       tar -C /tmp/gnupg -zxvf /tmp/gnupg.tgz --strip 1; \
@@ -231,7 +231,7 @@ ARG INSTALL_ZIP_ARCHIVE=false
 RUN set -eux; \
   if [ ${INSTALL_ZIP_ARCHIVE} = true ]; then \
   apk --update add libzip-dev && \
-  if [ ${IVPLDOCK_PHP_VERSION} = "7.3" ] || [ ${IVPLDOCK_PHP_VERSION} = "7.4" ] || [ $(php -r "echo PHP_MAJOR_VERSION;") = "8" ]; then \
+  if [ ${DEVDOCK_PHP_VERSION} = "7.3" ] || [ ${DEVDOCK_PHP_VERSION} = "7.4" ] || [ $(php -r "echo PHP_MAJOR_VERSION;") = "8" ]; then \
   docker-php-ext-configure zip; \
   else \
   docker-php-ext-configure zip --with-libzip; \
@@ -295,11 +295,11 @@ ARG INSTALL_AMQP=false
 RUN if [ ${INSTALL_AMQP} = true ]; then \
   docker-php-ext-install sockets; \
   apk --update add -q rabbitmq-c rabbitmq-c-dev && \
-  if [ ${IVPLDOCK_PHP_VERSION} = "7.3" ] \
-    || [ ${IVPLDOCK_PHP_VERSION} = "7.2" ] \
-    || [ ${IVPLDOCK_PHP_VERSION} = "7.1" ] \
-    || [ ${IVPLDOCK_PHP_VERSION} = "7.0" ] \
-    || [ ${IVPLDOCK_PHP_VERSION} = "5.6" ]; then \
+  if [ ${DEVDOCK_PHP_VERSION} = "7.3" ] \
+    || [ ${DEVDOCK_PHP_VERSION} = "7.2" ] \
+    || [ ${DEVDOCK_PHP_VERSION} = "7.1" ] \
+    || [ ${DEVDOCK_PHP_VERSION} = "7.0" ] \
+    || [ ${DEVDOCK_PHP_VERSION} = "5.6" ]; then \
     printf "\n" | pecl install amqp-1.11.0; \
   else \
     printf "\n" | pecl install amqp; \

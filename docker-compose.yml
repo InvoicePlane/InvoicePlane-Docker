@@ -25,10 +25,10 @@ services:
           - SHELL_OH_MY_ZSH_AUTOSUGESTIONS=${SHELL_OH_MY_ZSH_AUTOSUGESTIONS}
           - SHELL_OH_MY_ZSH_ALIASES=${SHELL_OH_MY_ZSH_ALIASES}
           - BASE_IMAGE_TAG_PREFIX=${WORKSPACE_BASE_IMAGE_TAG_PREFIX}
-          - IVPLDOCK_USER=${IVPLDOCK_USER}
-          - IVPLDOCK_PHP_VERSION=${PHP_VERSION}
+          - DEVDOCK_USER=${DEVDOCK_USER}
+          - DEVDOCK_PHP_VERSION=${PHP_VERSION}
           - WORKSPACE_WORKDIR=${APP_CODE_PATH_CONTAINER}
-          - IVPLDOCK_PHALCON_VERSION=${PHALCON_VERSION}
+          - DEVDOCK_PHALCON_VERSION=${PHALCON_VERSION}
           - INSTALL_SUBVERSION=${WORKSPACE_INSTALL_SUBVERSION}
           - INSTALL_BZ2=${WORKSPACE_INSTALL_BZ2}
           - INSTALL_GMP=${WORKSPACE_INSTALL_GMP}
@@ -179,8 +179,8 @@ services:
         args:
           - CHANGE_SOURCE=${CHANGE_SOURCE}
           - BASE_IMAGE_TAG_PREFIX=${PHP_FPM_BASE_IMAGE_TAG_PREFIX}
-          - IVPLDOCK_PHP_VERSION=${PHP_VERSION}
-          - IVPLDOCK_PHALCON_VERSION=${PHALCON_VERSION}
+          - DEVDOCK_PHP_VERSION=${PHP_VERSION}
+          - DEVDOCK_PHALCON_VERSION=${PHALCON_VERSION}
           - INSTALL_BZ2=${PHP_FPM_INSTALL_BZ2}
           - INSTALL_ENCHANT=${PHP_FPM_INSTALL_ENCHANT}
           - INSTALL_GMP=${PHP_FPM_INSTALL_GMP}
@@ -291,9 +291,9 @@ services:
         context: ./.docker/php-worker
         args:
           - CHANGE_SOURCE=${CHANGE_SOURCE}
-          - IVPLDOCK_PHP_VERSION=${PHP_VERSION}
+          - DEVDOCK_PHP_VERSION=${PHP_VERSION}
           - PHALCON_VERSION=${PHALCON_VERSION}
-          - IVPLDOCK_PHALCON_VERSION=${PHALCON_VERSION}
+          - DEVDOCK_PHALCON_VERSION=${PHALCON_VERSION}
           - INSTALL_BZ2=${PHP_WORKER_INSTALL_BZ2}
           - INSTALL_GD=${PHP_WORKER_INSTALL_GD}
           - INSTALL_IMAGEMAGICK=${PHP_WORKER_INSTALL_IMAGEMAGICK}
@@ -429,7 +429,7 @@ services:
       build: ./.docker/phpmyadmin
       volumes:
       - ./.docker/phpmyadmin/config.user.inc.php:/etc/phpmyadmin/config.user.inc.php
-      - ./resources/databases:/var/www/html/tmp/ivpldock_databases
+      - ./resources/databases:/var/www/html/tmp/devdock_databases
       environment:
         - PMA_ARBITRARY=1
         - MYSQL_USER=${PMA_USER}

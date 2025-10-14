@@ -24,7 +24,7 @@ We've simplified this for you with a bash script:
 ## Getting inside a container
 Normally you get into a container with the following command:
 
-`docker-compose exec --user=ivpldock workspace bash`
+`docker-compose exec --user=devdock workspace bash`
 
 We've simplified this for you with a bash script:
 `./workmeup.sh` will get you inside a container (on Linux and on Mac)

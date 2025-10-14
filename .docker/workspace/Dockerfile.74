@@ -7,18 +7,18 @@
 #    https://github.com/Laradock/workspace
 #
 # To change its version, see the available Tags on the Docker Hub:
-#    https://hub.docker.com/r/ivpldock/workspace/tags/
+#    https://hub.docker.com/r/devdock/workspace/tags/
 #
 # Note: Base Image name format {image-tag}-{php-version}
 #
 
-ARG IVPLDOCK_PHP_VERSION
+ARG DEVDOCK_PHP_VERSION
 ARG BASE_IMAGE_TAG_PREFIX=latest
-FROM laradock/workspace:${BASE_IMAGE_TAG_PREFIX}-${IVPLDOCK_PHP_VERSION}
+FROM laradock/workspace:${BASE_IMAGE_TAG_PREFIX}-${DEVDOCK_PHP_VERSION}
 
 LABEL maintainer="Mahmoud Zalt <mahmoud@zalt.me>"
 
-ARG IVPLDOCK_PHP_VERSION
+ARG DEVDOCK_PHP_VERSION
 
 # Set Environment Variables
 ENV DEBIAN_FRONTEND noninteractive
@@ -51,9 +51,9 @@ ENV PGID ${PGID}
 RUN set -xe; \
     apt-get update -yqq && \
     pecl channel-update pecl.php.net && \
-    groupadd -g ${PGID} ivpldock && \
-    useradd -l -u ${PUID} -g ivpldock -m ivpldock -G docker_env && \
-    usermod -p "*" ivpldock -s /bin/bash && \
+    groupadd -g ${PGID} devdock && \
+    useradd -l -u ${PUID} -g devdock -m devdock -G docker_env && \
+    usermod -p "*" devdock -s /bin/bash && \
     apt-get install -yqq \
       apt-utils \
       #
@@ -62,14 +62,14 @@ RUN set -xe; \
       #--------------------------------------------------------------------------
       #
       # Mandatory Software's such as ("php-cli", "git", "vim", ....) are
-      # installed on the base image 'ivpldock/workspace' image. If you want
+      # installed on the base image 'devdock/workspace' image. If you want
       # to add more Software's or remove existing one, you need to edit the
       # base image (https://github.com/Laradock/workspace).
       #
-      # next lines are here because there is no auto build on dockerhub see https://github.com/ivpldock/ivpldock/pull/1903#issuecomment-463142846
+      # next lines are here because there is no auto build on dockerhub see https://github.com/devdock/devdock/pull/1903#issuecomment-463142846
       libzip-dev zip unzip \
       # Install the zip extension
-      php${IVPLDOCK_PHP_VERSION}-zip \
+      php${DEVDOCK_PHP_VERSION}-zip \
       # nasm
       nasm && \
       php -m | grep -q 'zip'
@@ -102,18 +102,18 @@ RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 USER root
 
 COPY ./aliases.sh /root/aliases.sh
-COPY ./aliases.sh /home/ivpldock/aliases.sh
+COPY ./aliases.sh /home/devdock/aliases.sh
 
 RUN sed -i 's/\r//' /root/aliases.sh && \
-    sed -i 's/\r//' /home/ivpldock/aliases.sh && \
-    chown ivpldock:ivpldock /home/ivpldock/aliases.sh && \
+    sed -i 's/\r//' /home/devdock/aliases.sh && \
+    chown devdock:devdock /home/devdock/aliases.sh && \
     echo "" >> ~/.bashrc && \
     echo "# Load Custom Aliases" >> ~/.bashrc && \
     echo "export PS1='\W\$ '" >> ~/.bashrc && \
     echo "source ~/aliases.sh" >> ~/.bashrc && \
     echo "" >> ~/.bashrc
 
-USER ivpldock
+USER devdock
 
 RUN echo "" >> ~/.bashrc && \
     echo "# Load Custom Aliases" >> ~/.bashrc && \
@@ -128,13 +128,13 @@ RUN echo "" >> ~/.bashrc && \
 USER root
 
 # Add the composer.json
-COPY ./composer.json /home/ivpldock/.composer/composer.json
+COPY ./composer.json /home/devdock/.composer/composer.json
 
 # Add the auth.json for magento 2 credentials
-COPY ./auth.json /home/ivpldock/.composer/auth.json
+COPY ./auth.json /home/devdock/.composer/auth.json
 
-# Make sure that ~/.composer belongs to ivpldock
-RUN chown -R ivpldock:ivpldock /home/ivpldock/.composer
+# Make sure that ~/.composer belongs to devdock
+RUN chown -R devdock:devdock /home/devdock/.composer
 
 # Export composer vendor path
 RUN echo "" >> ~/.bashrc && \
@@ -150,7 +150,7 @@ RUN set -eux; \
           composer self-update ${COMPOSER_VERSION}; \
       fi
 
-USER ivpldock
+USER devdock
 
 # Check if global install need to be ran
 ARG COMPOSER_GLOBAL_INSTALL=false
@@ -167,7 +167,7 @@ ENV COMPOSER_AUTH_JSON ${COMPOSER_AUTH_JSON}
 
 RUN if [ ${COMPOSER_AUTH_JSON} = false ]; then \
     # remove the file
-    rm /home/ivpldock/.composer/auth.json \
+    rm /home/devdock/.composer/auth.json \
 ;fi
 
 ARG COMPOSER_REPO_PACKAGIST
@@ -186,7 +186,7 @@ RUN echo "" >> ~/.bashrc && \
 ###########################################################################
 
 # add ./vendor/bin to non-root user's bashrc (needed for phpunit)
-USER ivpldock
+USER devdock
 
 RUN echo "" >> ~/.bashrc && \
     echo 'export PATH="/var/www/vendor/bin:$PATH"' >> ~/.bashrc
@@ -246,48 +246,48 @@ ARG INSTALL_GNUPG=false
 ARG INSTALL_SSH2=false
 ARG INSTALL_SOAP=false
 ARG INSTALL_XSL=false
-ARG PHP_VERSION=${IVPLDOCK_PHP_VERSION}
+ARG PHP_VERSION=${DEVDOCK_PHP_VERSION}
 
 RUN set -eux; \
     ###########################################################################
     # BZ2:
     ###########################################################################
     if [ ${INSTALL_BZ2} = true ]; then \
-      apt-get -yqq install php${IVPLDOCK_PHP_VERSION}-bz2; \
+      apt-get -yqq install php${DEVDOCK_PHP_VERSION}-bz2; \
     fi; \
     ###########################################################################
     # GMP (GNU Multiple Precision):
     ###########################################################################
     if [ ${INSTALL_GMP} = true ]; then \
       # Install the PHP GMP extension
-      apt-get -yqq install php${IVPLDOCK_PHP_VERSION}-gmp; \
+      apt-get -yqq install php${DEVDOCK_PHP_VERSION}-gmp; \
     fi; \
     ###########################################################################
     # GnuPG:
     ###########################################################################
     if [ ${INSTALL_GNUPG} = true ]; then \
-        apt-get -yqq install php${IVPLDOCK_PHP_VERSION}-gnupg; \
+        apt-get -yqq install php${DEVDOCK_PHP_VERSION}-gnupg; \
     fi; \
     ###########################################################################
     # SSH2:
     ###########################################################################
     if [ ${INSTALL_SSH2} = true ]; then \
       # Install the PHP SSH2 extension
-      apt-get -yqq install libssh2-1-dev php${IVPLDOCK_PHP_VERSION}-ssh2; \
+      apt-get -yqq install libssh2-1-dev php${DEVDOCK_PHP_VERSION}-ssh2; \
     fi; \
     ###########################################################################
     # SOAP:
     ###########################################################################
     if [ ${INSTALL_SOAP} = true ]; then \
       # Install the PHP SOAP extension
-      apt-get -yqq install libxml2-dev php${IVPLDOCK_PHP_VERSION}-soap; \
+      apt-get -yqq install libxml2-dev php${DEVDOCK_PHP_VERSION}-soap; \
     fi; \
     ###########################################################################
     # XSL:
     ###########################################################################
     if [ ${INSTALL_XSL} = true ]; then \
       # Install the PHP XSL extension
-      apt-get -yqq install libxslt-dev php${IVPLDOCK_PHP_VERSION}-xsl; \
+      apt-get -yqq install libxslt-dev php${DEVDOCK_PHP_VERSION}-xsl; \
     fi
 
 ###########################################################################
@@ -302,19 +302,19 @@ RUN set -eux; \
     # LDAP:
     ###########################################################################
     if [ ${INSTALL_LDAP} = true ]; then \
-        apt-get install -yqq libldap2-dev php${IVPLDOCK_PHP_VERSION}-ldap; \
+        apt-get install -yqq libldap2-dev php${DEVDOCK_PHP_VERSION}-ldap; \
     fi; \
     ###########################################################################
     # SMB:
     ###########################################################################
     if [ ${INSTALL_SMB} = true ]; then \
-        apt-get install -yqq smbclient php${IVPLDOCK_PHP_VERSION}-smbclient coreutils; \
+        apt-get install -yqq smbclient php${DEVDOCK_PHP_VERSION}-smbclient coreutils; \
     fi; \
     ###########################################################################
     # IMAP:
     ###########################################################################
     if [ ${INSTALL_IMAP} = true ]; then \
-        apt-get install -yqq php${IVPLDOCK_PHP_VERSION}-imap; \
+        apt-get install -yqq php${DEVDOCK_PHP_VERSION}-imap; \
     fi; \
     ###########################################################################
     # Subversion:
@@ -335,7 +335,7 @@ ARG XDEBUG_PORT=9003
 RUN if [ ${INSTALL_XDEBUG} = true ]; then \
   # Install the xdebug extension
   # https://xdebug.org/docs/compat
-  apt-get install -yqq pkg-config php-xml php${IVPLDOCK_PHP_VERSION}-xml && \
+  apt-get install -yqq pkg-config php-xml php${DEVDOCK_PHP_VERSION}-xml && \
   if [ $(php -r "echo PHP_MAJOR_VERSION;") = "8" ] || { [ $(php -r "echo PHP_MAJOR_VERSION;") = "7" ] && { [ $(php -r "echo PHP_MINOR_VERSION;") = "4" ] || [ $(php -r "echo PHP_MINOR_VERSION;") = "3" ] ;} ;}; then \
     if [ $(php -r "echo PHP_MAJOR_VERSION;") = "8" ]; then \
       pecl install xdebug-3.3.0; \
@@ -353,26 +353,26 @@ RUN if [ ${INSTALL_XDEBUG} = true ]; then \
       fi \
     fi \
   fi && \
-  echo "zend_extension=xdebug.so" >> /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/20-xdebug.ini \
+  echo "zend_extension=xdebug.so" >> /etc/php/${DEVDOCK_PHP_VERSION}/cli/conf.d/20-xdebug.ini \
 ;fi
 
 # ADD for REMOTE debugging
-COPY ./xdebug.ini /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/xdebug.ini
+COPY ./xdebug.ini /etc/php/${DEVDOCK_PHP_VERSION}/cli/conf.d/xdebug.ini
 
 RUN if [ $(php -r "echo PHP_MAJOR_VERSION;") = "8" ] || { [ $(php -r "echo PHP_MAJOR_VERSION;") = "7" ] && { [ $(php -r "echo PHP_MINOR_VERSION;") = "4" ] || [ $(php -r "echo PHP_MINOR_VERSION;") = "3" ] ;} ;}; then \
-  sed -i "s/xdebug.remote_host=/xdebug.client_host=/" /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/xdebug.ini && \
-  sed -i "s/xdebug.remote_connect_back=0/xdebug.discover_client_host=false/" /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/xdebug.ini && \
-  sed -i "s/xdebug.remote_port=9000/xdebug.client_port=${XDEBUG_PORT}/" /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/xdebug.ini && \
-  sed -i "s/xdebug.profiler_enable=0/; xdebug.profiler_enable=0/" /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/xdebug.ini && \
-  sed -i "s/xdebug.profiler_output_dir=/xdebug.output_dir=/" /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/xdebug.ini && \
-  sed -i "s/xdebug.remote_mode=req/; xdebug.remote_mode=req/" /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/xdebug.ini && \
-  sed -i "s/xdebug.remote_autostart=0/xdebug.start_with_request=yes/" /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/xdebug.ini && \
-  sed -i "s/xdebug.remote_enable=0/xdebug.mode=debug/" /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/xdebug.ini \
+  sed -i "s/xdebug.remote_host=/xdebug.client_host=/" /etc/php/${DEVDOCK_PHP_VERSION}/cli/conf.d/xdebug.ini && \
+  sed -i "s/xdebug.remote_connect_back=0/xdebug.discover_client_host=false/" /etc/php/${DEVDOCK_PHP_VERSION}/cli/conf.d/xdebug.ini && \
+  sed -i "s/xdebug.remote_port=9000/xdebug.client_port=${XDEBUG_PORT}/" /etc/php/${DEVDOCK_PHP_VERSION}/cli/conf.d/xdebug.ini && \
+  sed -i "s/xdebug.profiler_enable=0/; xdebug.profiler_enable=0/" /etc/php/${DEVDOCK_PHP_VERSION}/cli/conf.d/xdebug.ini && \
+  sed -i "s/xdebug.profiler_output_dir=/xdebug.output_dir=/" /etc/php/${DEVDOCK_PHP_VERSION}/cli/conf.d/xdebug.ini && \
+  sed -i "s/xdebug.remote_mode=req/; xdebug.remote_mode=req/" /etc/php/${DEVDOCK_PHP_VERSION}/cli/conf.d/xdebug.ini && \
+  sed -i "s/xdebug.remote_autostart=0/xdebug.start_with_request=yes/" /etc/php/${DEVDOCK_PHP_VERSION}/cli/conf.d/xdebug.ini && \
+  sed -i "s/xdebug.remote_enable=0/xdebug.mode=debug/" /etc/php/${DEVDOCK_PHP_VERSION}/cli/conf.d/xdebug.ini \
 ;else \
-  sed -i "s/xdebug.remote_autostart=0/xdebug.remote_autostart=1/" /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/xdebug.ini && \
-  sed -i "s/xdebug.remote_enable=0/xdebug.remote_enable=1/" /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/xdebug.ini \
+  sed -i "s/xdebug.remote_autostart=0/xdebug.remote_autostart=1/" /etc/php/${DEVDOCK_PHP_VERSION}/cli/conf.d/xdebug.ini && \
+  sed -i "s/xdebug.remote_enable=0/xdebug.remote_enable=1/" /etc/php/${DEVDOCK_PHP_VERSION}/cli/conf.d/xdebug.ini \
 ;fi
-RUN sed -i "s/xdebug.cli_color=0/xdebug.cli_color=1/" /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/xdebug.ini
+RUN sed -i "s/xdebug.cli_color=0/xdebug.cli_color=1/" /etc/php/${DEVDOCK_PHP_VERSION}/cli/conf.d/xdebug.ini
 
 ###########################################################################
 # pcov:
@@ -385,8 +385,8 @@ ARG INSTALL_PCOV=false
 RUN if [ ${INSTALL_PCOV} = true ]; then \
   if [ $(php -r "echo PHP_MAJOR_VERSION;") = "8" ]  || { [ $(php -r "echo PHP_MAJOR_VERSION;") = "7" ] && [ $(php -r "echo PHP_MINOR_VERSION;") != "0" ]; }; then \
     pecl install pcov && \
-    echo "extension=pcov.so" >> /etc/php/${IVPLDOCK_PHP_VERSION}/cli/php.ini && \
-    echo "pcov.enabled" >> /etc/php/${IVPLDOCK_PHP_VERSION}/cli/php.ini \
+    echo "extension=pcov.so" >> /etc/php/${DEVDOCK_PHP_VERSION}/cli/php.ini && \
+    echo "pcov.enabled" >> /etc/php/${DEVDOCK_PHP_VERSION}/cli/php.ini \
   ;fi \
 ;fi
 
@@ -401,7 +401,7 @@ ARG INSTALL_PHPDBG=false
 
 RUN if [ ${INSTALL_PHPDBG} = true ]; then \
     # Load the xdebug extension only with phpunit commands
-    apt-get install -y --force-yes php${IVPLDOCK_PHP_VERSION}-phpdbg \
+    apt-get install -y --force-yes php${DEVDOCK_PHP_VERSION}-phpdbg \
 ;fi
 
 ###########################################################################
@@ -432,8 +432,8 @@ RUN if [ ${INSTALL_MONGO} = true ]; then \
     apt-get install -yqq pkg-config && \
     if [ $(php -r "echo PHP_MAJOR_VERSION;") = "5" ]; then \
       pecl install mongo; \
-      echo "extension=mongo.so" >> /etc/php/${IVPLDOCK_PHP_VERSION}/mods-available/mongo.ini; \
-      ln -s /etc/php/${IVPLDOCK_PHP_VERSION}/mods-available/mongo.ini /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/30-mongo.ini; \
+      echo "extension=mongo.so" >> /etc/php/${DEVDOCK_PHP_VERSION}/mods-available/mongo.ini; \
+      ln -s /etc/php/${DEVDOCK_PHP_VERSION}/mods-available/mongo.ini /etc/php/${DEVDOCK_PHP_VERSION}/cli/conf.d/30-mongo.ini; \
       php -m | grep -oiE '^mongo$'; \
     else \
       if [ $(php -r "echo PHP_MAJOR_VERSION;") = "7" ] && [ $(php -r "echo PHP_MINOR_VERSION;") != "4" ]; then \
@@ -445,8 +445,8 @@ RUN if [ ${INSTALL_MONGO} = true ]; then \
       else \
         pecl install mongodb; \
       fi; \
-      echo "extension=mongodb.so" >> /etc/php/${IVPLDOCK_PHP_VERSION}/mods-available/mongodb.ini; \
-      ln -s /etc/php/${IVPLDOCK_PHP_VERSION}/mods-available/mongodb.ini /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/30-mongodb.ini; \
+      echo "extension=mongodb.so" >> /etc/php/${DEVDOCK_PHP_VERSION}/mods-available/mongodb.ini; \
+      ln -s /etc/php/${DEVDOCK_PHP_VERSION}/mods-available/mongodb.ini /etc/php/${DEVDOCK_PHP_VERSION}/cli/conf.d/30-mongodb.ini; \
       php -m | grep -oiE '^mongodb$'; \
     fi; \
 fi
@@ -459,17 +459,17 @@ ARG INSTALL_AMQP=false
 
 RUN if [ ${INSTALL_AMQP} = true ]; then \
     apt-get install -yqq librabbitmq-dev && \
-    if [ ${IVPLDOCK_PHP_VERSION} = "7.3" ] \
-      || [ ${IVPLDOCK_PHP_VERSION} = "7.2" ] \
-      || [ ${IVPLDOCK_PHP_VERSION} = "7.1" ] \
-      || [ ${IVPLDOCK_PHP_VERSION} = "7.0" ] \
-      || [ ${IVPLDOCK_PHP_VERSION} = "5.6" ]; then \
+    if [ ${DEVDOCK_PHP_VERSION} = "7.3" ] \
+      || [ ${DEVDOCK_PHP_VERSION} = "7.2" ] \
+      || [ ${DEVDOCK_PHP_VERSION} = "7.1" ] \
+      || [ ${DEVDOCK_PHP_VERSION} = "7.0" ] \
+      || [ ${DEVDOCK_PHP_VERSION} = "5.6" ]; then \
       printf "\n" | pecl install amqp-1.11.0; \
     else \
       printf "\n" | pecl install amqp; \
     fi && \
-    echo "extension=amqp.so" >> /etc/php/${IVPLDOCK_PHP_VERSION}/mods-available/amqp.ini && \
-    ln -s /etc/php/${IVPLDOCK_PHP_VERSION}/mods-available/amqp.ini /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/30-amqp.ini && \
+    echo "extension=amqp.so" >> /etc/php/${DEVDOCK_PHP_VERSION}/mods-available/amqp.ini && \
+    ln -s /etc/php/${DEVDOCK_PHP_VERSION}/mods-available/amqp.ini /etc/php/${DEVDOCK_PHP_VERSION}/cli/conf.d/30-amqp.ini && \
     php -m | grep -oiE '^amqp$' \
 ;fi
 
@@ -503,8 +503,8 @@ RUN if [ ${INSTALL_CASSANDRA} = true ]; then \
       make clean >/dev/null && \
       make >/dev/null 2>&1 && \
       make install && \
-      echo "extension=cassandra.so" >> /etc/php/${IVPLDOCK_PHP_VERSION}/mods-available/cassandra.ini && \
-      ln -s /etc/php/${IVPLDOCK_PHP_VERSION}/mods-available/cassandra.ini /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/30-cassandra.ini; \
+      echo "extension=cassandra.so" >> /etc/php/${DEVDOCK_PHP_VERSION}/mods-available/cassandra.ini && \
+      ln -s /etc/php/${DEVDOCK_PHP_VERSION}/mods-available/cassandra.ini /etc/php/${DEVDOCK_PHP_VERSION}/cli/conf.d/30-cassandra.ini; \
     fi \
 ;fi
 
@@ -518,7 +518,7 @@ RUN if [ ${INSTALL_GEARMAN} = true ]; then \
     add-apt-repository -y ppa:ondrej/pkg-gearman && \
     apt-get update && \
     if [ $(php -r "echo PHP_MAJOR_VERSION;") = "7" ]; then \
-      apt-get install php${IVPLDOCK_PHP_VERSION}-gearman -y  \
+      apt-get install php${DEVDOCK_PHP_VERSION}-gearman -y  \
     ; else \
       apt-get install php-gearman -y  \
     ;fi \
@@ -532,7 +532,7 @@ ARG INSTALL_PHPREDIS=false
 
 RUN if [ ${INSTALL_PHPREDIS} = true ]; then \
     apt-get update \
-    && apt-get install -yqq php${IVPLDOCK_PHP_VERSION}-redis \
+    && apt-get install -yqq php${DEVDOCK_PHP_VERSION}-redis \
 ;fi
 
 ###########################################################################
@@ -557,8 +557,8 @@ RUN set -eux; \
       else \
         echo '' | pecl -q install swoole; \
       fi; \
-      echo "extension=swoole.so" >> /etc/php/${IVPLDOCK_PHP_VERSION}/mods-available/swoole.ini; \
-      ln -s /etc/php/${IVPLDOCK_PHP_VERSION}/mods-available/swoole.ini /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/20-swoole.ini; \
+      echo "extension=swoole.so" >> /etc/php/${DEVDOCK_PHP_VERSION}/mods-available/swoole.ini; \
+      ln -s /etc/php/${DEVDOCK_PHP_VERSION}/mods-available/swoole.ini /etc/php/${DEVDOCK_PHP_VERSION}/cli/conf.d/20-swoole.ini; \
       php -m | grep -q 'swoole'; \
     fi
 
@@ -574,8 +574,8 @@ RUN set -eux; \
       # Install Php xlswriter Extension
       if [ $(php -r "echo PHP_MAJOR_VERSION;") != "5" ]; then \
         echo '' | pecl -q install xlswriter && \
-        echo "extension=xlswriter.so" >> /etc/php/${IVPLDOCK_PHP_VERSION}/mods-available/xlswriter.ini && \
-        ln -s /etc/php/${IVPLDOCK_PHP_VERSION}/mods-available/xlswriter.ini /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/20-xlswriter.ini && \
+        echo "extension=xlswriter.so" >> /etc/php/${DEVDOCK_PHP_VERSION}/mods-available/xlswriter.ini && \
+        ln -s /etc/php/${DEVDOCK_PHP_VERSION}/mods-available/xlswriter.ini /etc/php/${DEVDOCK_PHP_VERSION}/cli/conf.d/20-xlswriter.ini && \
         php -m | grep -q 'xlswriter'; \
       else \
         echo "PHP Extension for xlswriter is not supported for PHP 5.0"; \
@@ -593,8 +593,8 @@ RUN if [ "${INSTALL_TAINT}" = true ]; then \
     # Install Php TAINT Extension
     if [ $(php -r "echo PHP_MAJOR_VERSION;") = "7" ]; then \
       pecl install taint && \
-      echo "extension=taint.so" >> /etc/php/${IVPLDOCK_PHP_VERSION}/mods-available/taint.ini && \
-      ln -s /etc/php/${IVPLDOCK_PHP_VERSION}/mods-available/taint.ini /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/20-taint.ini && \
+      echo "extension=taint.so" >> /etc/php/${DEVDOCK_PHP_VERSION}/mods-available/taint.ini && \
+      ln -s /etc/php/${DEVDOCK_PHP_VERSION}/mods-available/taint.ini /etc/php/${DEVDOCK_PHP_VERSION}/cli/conf.d/20-taint.ini && \
       php -m | grep -q 'taint'; \
     fi \
 ;fi
@@ -618,12 +618,12 @@ ARG INSTALL_INOTIFY=false
 RUN if [ ${INSTALL_INOTIFY} = true ]; then \
     if [ $(php -r "echo PHP_MAJOR_VERSION;") = "5" ]; then \
       pecl -q install inotify-0.1.6 && \
-      echo "extension=inotify.so" >> /etc/php/${IVPLDOCK_PHP_VERSION}/mods-available/inotify.ini && \
-      ln -s /etc/php/${IVPLDOCK_PHP_VERSION}/mods-available/inotify.ini /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/20-inotify.ini; \
+      echo "extension=inotify.so" >> /etc/php/${DEVDOCK_PHP_VERSION}/mods-available/inotify.ini && \
+      ln -s /etc/php/${DEVDOCK_PHP_VERSION}/mods-available/inotify.ini /etc/php/${DEVDOCK_PHP_VERSION}/cli/conf.d/20-inotify.ini; \
     else \
       pecl -q install inotify && \
-      echo "extension=inotify.so" >> /etc/php/${IVPLDOCK_PHP_VERSION}/mods-available/inotify.ini && \
-      ln -s /etc/php/${IVPLDOCK_PHP_VERSION}/mods-available/inotify.ini /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/20-inotify.ini \
+      echo "extension=inotify.so" >> /etc/php/${DEVDOCK_PHP_VERSION}/mods-available/inotify.ini && \
+      ln -s /etc/php/${DEVDOCK_PHP_VERSION}/mods-available/inotify.ini /etc/php/${DEVDOCK_PHP_VERSION}/cli/conf.d/20-inotify.ini \
     ;fi \
 ;fi
 
@@ -640,8 +640,8 @@ RUN if [ ${INSTALL_AST} = true ]; then \
     if [ $(php -r "echo PHP_MAJOR_VERSION;") != "5" ]; then \
         # Install AST extension
         printf "\n" | pecl -q install ast-${AST_VERSION} && \
-        echo "extension=ast.so" >> /etc/php/${IVPLDOCK_PHP_VERSION}/mods-available/ast.ini && \
-        phpenmod -v ${IVPLDOCK_PHP_VERSION} -s cli ast \
+        echo "extension=ast.so" >> /etc/php/${DEVDOCK_PHP_VERSION}/mods-available/ast.ini && \
+        phpenmod -v ${DEVDOCK_PHP_VERSION} -s cli ast \
     ;fi \
 ;fi
 
@@ -675,14 +675,14 @@ RUN if [ ${INSTALL_GRAPHVIZ} = true ]; then \
 ARG INSTALL_IONCUBE=false
 
 RUN if [ ${INSTALL_IONCUBE} = true ]; then \
-    if [ ${IVPLDOCK_PHP_VERSION} != "8.3" ] \
-      && [ ${IVPLDOCK_PHP_VERSION} != "8.0" ]; then \
+    if [ ${DEVDOCK_PHP_VERSION} != "8.3" ] \
+      && [ ${DEVDOCK_PHP_VERSION} != "8.0" ]; then \
       # Install the php ioncube loader
       curl -L -o /tmp/ioncube_loaders_lin_x86-64.tar.gz https://downloads.ioncube.com/loader_downloads/ioncube_loaders_lin_x86-64.tar.gz \
       && tar zxpf /tmp/ioncube_loaders_lin_x86-64.tar.gz -C /tmp \
-      && mv /tmp/ioncube/ioncube_loader_lin_${IVPLDOCK_PHP_VERSION}.so $(php -r "echo ini_get('extension_dir');")/ioncube_loader.so \
-      && echo "zend_extension=ioncube_loader.so" >> /etc/php/${IVPLDOCK_PHP_VERSION}/mods-available/ioncube.ini \
-      && ln -s /etc/php/${IVPLDOCK_PHP_VERSION}/mods-available/ioncube.ini /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/0ioncube.ini \
+      && mv /tmp/ioncube/ioncube_loader_lin_${DEVDOCK_PHP_VERSION}.so $(php -r "echo ini_get('extension_dir');")/ioncube_loader.so \
+      && echo "zend_extension=ioncube_loader.so" >> /etc/php/${DEVDOCK_PHP_VERSION}/mods-available/ioncube.ini \
+      && ln -s /etc/php/${DEVDOCK_PHP_VERSION}/mods-available/ioncube.ini /etc/php/${DEVDOCK_PHP_VERSION}/cli/conf.d/0ioncube.ini \
       && rm -rf /tmp/ioncube* \
       && php -m | grep -oiE '^ionCube Loader$' \
     ;fi \
@@ -703,7 +703,7 @@ RUN if [ ${INSTALL_DRUPAL_CONSOLE} = true ]; then \
     chmod +x /usr/local/bin/drupal \
 ;fi
 
-USER ivpldock
+USER devdock
 
 ###########################################################################
 # Node / NVM:
@@ -728,7 +728,7 @@ ARG NPM_FETCH_RETRY_MINTIMEOUT
 ENV NPM_FETCH_RETRY_MINTIMEOUT ${NPM_FETCH_RETRY_MINTIMEOUT}
 ARG NPM_FETCH_RETRY_MAXTIMEOUT
 ENV NPM_FETCH_RETRY_MAXTIMEOUT ${NPM_FETCH_RETRY_MAXTIMEOUT}
-ENV NVM_DIR /home/ivpldock/.nvm
+ENV NVM_DIR /home/devdock/.nvm
 ARG NVM_NODEJS_ORG_MIRROR
 ENV NVM_NODEJS_ORG_MIRROR ${NVM_NODEJS_ORG_MIRROR}
 
@@ -753,7 +753,7 @@ USER root
 
 RUN if [ ${INSTALL_NODE} = true ]; then \
     echo "" >> ~/.bashrc && \
-    echo 'export NVM_DIR="/home/ivpldock/.nvm"' >> ~/.bashrc && \
+    echo 'export NVM_DIR="/home/devdock/.nvm"' >> ~/.bashrc && \
     echo '[ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"  # This loads nvm' >> ~/.bashrc \
 ;fi
 
@@ -777,7 +777,7 @@ RUN if [ ${NPM_REGISTRY} ]; then \
 
 # Mount .npmrc into home folder
 COPY ./.npmrc /root/.npmrc
-COPY ./.npmrc /home/ivpldock/.npmrc
+COPY ./.npmrc /home/devdock/.npmrc
 
 
 ###########################################################################
@@ -787,12 +787,12 @@ COPY ./.npmrc /home/ivpldock/.npmrc
 USER root
 
 ARG INSTALL_PNPM=false
-ENV PNPM_HOME="/home/ivpldock/.local/share/pnpm"
-ENV PATH $PATH:/home/ivpldock/.local/share/pnpm
+ENV PNPM_HOME="/home/devdock/.local/share/pnpm"
+ENV PATH $PATH:/home/devdock/.local/share/pnpm
 
 RUN if [ ${INSTALL_PNPM} = true ]; then \
     echo "" >> ~/.bashrc && \
-    echo 'export PNPM_HOME="/home/ivpldock/.local/share/pnpm"' >> ~/.bashrc && \
+    echo 'export PNPM_HOME="/home/devdock/.local/share/pnpm"' >> ~/.bashrc && \
     echo 'export PATH="$PNPM_HOME:$PATH"' >> ~/.bashrc && \
     npx pnpm add -g pnpm \
 ;fi
@@ -802,7 +802,7 @@ RUN if [ ${INSTALL_PNPM} = true ]; then \
 # YARN:
 ###########################################################################
 
-USER ivpldock
+USER devdock
 
 ARG INSTALL_YARN=false
 ARG YARN_VERSION=latest
@@ -824,12 +824,12 @@ USER root
 
 RUN if [ ${INSTALL_YARN} = true ]; then \
     echo "" >> ~/.bashrc && \
-    echo 'export YARN_DIR="/home/ivpldock/.yarn"' >> ~/.bashrc && \
+    echo 'export YARN_DIR="/home/devdock/.yarn"' >> ~/.bashrc && \
     echo 'export PATH="$YARN_DIR/bin:$PATH"' >> ~/.bashrc \
 ;fi
 
 # Add PATH for YARN
-ENV PATH $PATH:/home/ivpldock/.yarn/bin
+ENV PATH $PATH:/home/devdock/.yarn/bin
 
 ###########################################################################
 # PHP Aerospike:
@@ -872,9 +872,9 @@ RUN set -xe; \
         ;fi \
       ;fi \
     && rm /tmp/aerospike-client-php.tar.gz \
-    && echo 'extension=aerospike.so' >> /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/aerospike.ini \
-    && echo 'aerospike.udf.lua_system_path=/usr/local/aerospike/lua' >> /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/aerospike.ini \
-    && echo 'aerospike.udf.lua_user_path=/usr/local/aerospike/usr-lua' >> /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/aerospike.ini \
+    && echo 'extension=aerospike.so' >> /etc/php/${DEVDOCK_PHP_VERSION}/cli/conf.d/aerospike.ini \
+    && echo 'aerospike.udf.lua_system_path=/usr/local/aerospike/lua' >> /etc/php/${DEVDOCK_PHP_VERSION}/cli/conf.d/aerospike.ini \
+    && echo 'aerospike.udf.lua_user_path=/usr/local/aerospike/usr-lua' >> /etc/php/${DEVDOCK_PHP_VERSION}/cli/conf.d/aerospike.ini \
   ;fi
 
 ###########################################################################
@@ -925,7 +925,7 @@ RUN if [ ${INSTALL_OCI8} = true ]; then \
   else \
     echo "instantclient,/opt/oracle/instantclient_${ORACLE_INSTANT_CLIENT_VERSION}/" | pecl install oci8; \
   fi \
-  && echo "extension=oci8.so" >> /etc/php/${IVPLDOCK_PHP_VERSION}/cli/php.ini \
+  && echo "extension=oci8.so" >> /etc/php/${DEVDOCK_PHP_VERSION}/cli/php.ini \
   && php -m | grep -q 'oci8' \
 ;fi
 
@@ -947,7 +947,7 @@ RUN set -xe; \
     else \
       pecl install v8js; \
     fi \
-    && echo "extension=v8js.so" >> /etc/php/${IVPLDOCK_PHP_VERSION}/cli/php.ini \
+    && echo "extension=v8js.so" >> /etc/php/${DEVDOCK_PHP_VERSION}/cli/php.ini \
     && php -m | grep -q 'v8js' \
   ;fi
 
@@ -955,7 +955,7 @@ RUN set -xe; \
 # Laravel Envoy:
 ###########################################################################
 
-USER ivpldock
+USER devdock
 
 ARG INSTALL_LARAVEL_ENVOY=false
 
@@ -969,7 +969,7 @@ RUN if [ ${INSTALL_LARAVEL_ENVOY} = true ]; then \
 # Laravel Installer:
 ###########################################################################
 
-USER ivpldock
+USER devdock
 
 ARG INSTALL_LARAVEL_INSTALLER=false
 
@@ -1084,8 +1084,8 @@ RUN set -eux; \
       ;else \
         pecl install pdo_sqlsrv sqlsrv \
       ;fi && \
-      echo "extension=pdo_sqlsrv.so" > /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/20-pdo_sqlsrv.ini && \
-      echo "extension=sqlsrv.so"     > /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/20-sqlsrv.ini && \
+      echo "extension=pdo_sqlsrv.so" > /etc/php/${DEVDOCK_PHP_VERSION}/cli/conf.d/20-pdo_sqlsrv.ini && \
+      echo "extension=sqlsrv.so"     > /etc/php/${DEVDOCK_PHP_VERSION}/cli/conf.d/20-sqlsrv.ini && \
       php -m | grep -oiE '^pdo_sqlsrv$' && \
       php -m | grep -oiE '^sqlsrv$' \
     ;fi \
@@ -1106,7 +1106,7 @@ RUN if [ ${INSTALL_IMAGE_OPTIMIZERS} = true ]; then \
     ;fi\
 ;fi
 
-USER ivpldock
+USER devdock
 
 ###########################################################################
 # Symfony:
@@ -1183,7 +1183,7 @@ RUN if [ ${INSTALL_SUPERVISOR} = true ]; then \
   ;fi \
 ;fi
 
-USER ivpldock
+USER devdock
 
 ###########################################################################
 # ImageMagick:
@@ -1214,8 +1214,8 @@ RUN if [ ${INSTALL_IMAGEMAGICK} = true ]; then \
     else \
       pecl install imagick; \
     fi && \
-    echo "extension=imagick.so" >> /etc/php/${IVPLDOCK_PHP_VERSION}/mods-available/imagick.ini && \
-    ln -s /etc/php/${IVPLDOCK_PHP_VERSION}/mods-available/imagick.ini /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/20-imagick.ini && \
+    echo "extension=imagick.so" >> /etc/php/${DEVDOCK_PHP_VERSION}/mods-available/imagick.ini && \
+    ln -s /etc/php/${DEVDOCK_PHP_VERSION}/mods-available/imagick.ini /etc/php/${DEVDOCK_PHP_VERSION}/cli/conf.d/20-imagick.ini && \
     php -m | grep -q 'imagick' \
 ;fi
 
@@ -1242,8 +1242,8 @@ RUN if [ ${INSTALL_TERRAFORM} = true ]; then \
 ARG INSTALL_MEMCACHED=false
 
 RUN if [ ${INSTALL_MEMCACHED} = true ]; then \
-  apt-get -y install php${IVPLDOCK_PHP_VERSION}-igbinary \
-  && apt-get -y install php${IVPLDOCK_PHP_VERSION}-memcached \
+  apt-get -y install php${DEVDOCK_PHP_VERSION}-igbinary \
+  && apt-get -y install php${DEVDOCK_PHP_VERSION}-memcached \
 ;fi
 
 ###########################################################################
@@ -1296,16 +1296,16 @@ RUN if [ ${INSTALL_DUSK_DEPS} = true ]; then \
 ###########################################################################
 
 ARG INSTALL_PHALCON=false
-ARG IVPLDOCK_PHALCON_VERSION
-ENV IVPLDOCK_PHALCON_VERSION ${IVPLDOCK_PHALCON_VERSION}
+ARG DEVDOCK_PHALCON_VERSION
+ENV DEVDOCK_PHALCON_VERSION ${DEVDOCK_PHALCON_VERSION}
 
 RUN if [ $INSTALL_PHALCON = true ]; then \
       apt-get update -yqq \
       && pecl channel-update pecl.php.net \
       && apt-get install -yqq libpcre3-dev; \
-      pecl install phalcon-${IVPLDOCK_PHALCON_VERSION}; \
-      echo "extension=phalcon.so" >> /etc/php/${IVPLDOCK_PHP_VERSION}/mods-available/phalcon.ini; \
-      ln -s /etc/php/${IVPLDOCK_PHP_VERSION}/mods-available/phalcon.ini /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/50-phalcon.ini; \
+      pecl install phalcon-${DEVDOCK_PHALCON_VERSION}; \
+      echo "extension=phalcon.so" >> /etc/php/${DEVDOCK_PHP_VERSION}/mods-available/phalcon.ini; \
+      ln -s /etc/php/${DEVDOCK_PHP_VERSION}/mods-available/phalcon.ini /etc/php/${DEVDOCK_PHP_VERSION}/cli/conf.d/50-phalcon.ini; \
       php -m | grep -q 'phalcon' \
   ;fi
 
@@ -1321,8 +1321,8 @@ RUN if [ ${INSTALL_APCU} = true ]; then \
   else \
     pecl install apcu; \
   fi && \
-  echo "extension=apcu.so" >> /etc/php/${IVPLDOCK_PHP_VERSION}/mods-available/apcu.ini; \
-  ln -s /etc/php/${IVPLDOCK_PHP_VERSION}/mods-available/apcu.ini /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/50-apcu.ini; \
+  echo "extension=apcu.so" >> /etc/php/${DEVDOCK_PHP_VERSION}/mods-available/apcu.ini; \
+  ln -s /etc/php/${DEVDOCK_PHP_VERSION}/mods-available/apcu.ini /etc/php/${DEVDOCK_PHP_VERSION}/cli/conf.d/50-apcu.ini; \
   php -m | grep -q 'apcu' \
 ;fi
 
@@ -1383,8 +1383,8 @@ RUN set -eux; \
     else \
         echo '' | pecl install yaml; \
     fi; \
-    echo "extension=yaml.so" >> /etc/php/${IVPLDOCK_PHP_VERSION}/mods-available/yaml.ini; \
-    ln -s /etc/php/${IVPLDOCK_PHP_VERSION}/mods-available/yaml.ini /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/35-yaml.ini; \
+    echo "extension=yaml.so" >> /etc/php/${DEVDOCK_PHP_VERSION}/mods-available/yaml.ini; \
+    ln -s /etc/php/${DEVDOCK_PHP_VERSION}/mods-available/yaml.ini /etc/php/${DEVDOCK_PHP_VERSION}/cli/conf.d/35-yaml.ini; \
   fi; \
   ###########################################################################
   # RDKAFKA:
@@ -1392,8 +1392,8 @@ RUN set -eux; \
   if [ ${INSTALL_RDKAFKA} = true ]; then \
     apt-get install -yqq librdkafka-dev; \
     pecl install rdkafka; \
-    echo "extension=rdkafka.so" >> /etc/php/${IVPLDOCK_PHP_VERSION}/mods-available/rdkafka.ini; \
-    ln -s /etc/php/${IVPLDOCK_PHP_VERSION}/mods-available/rdkafka.ini /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/20-rdkafka.ini; \
+    echo "extension=rdkafka.so" >> /etc/php/${DEVDOCK_PHP_VERSION}/mods-available/rdkafka.ini; \
+    ln -s /etc/php/${DEVDOCK_PHP_VERSION}/mods-available/rdkafka.ini /etc/php/${DEVDOCK_PHP_VERSION}/cli/conf.d/20-rdkafka.ini; \
     php -m | grep -q 'rdkafka'; \
   fi; \
   ###########################################################################
@@ -1505,7 +1505,7 @@ RUN if [ ${INSTALL_GIT_PROMPT} = true ]; then \
 ARG INSTALL_XMLRPC=false
 
 RUN if [ ${INSTALL_XMLRPC} = true ]; then \
-    apt-get install -yqq php${IVPLDOCK_PHP_VERSION}-xmlrpc \
+    apt-get install -yqq php${DEVDOCK_PHP_VERSION}-xmlrpc \
 ;fi
 
 ###########################################################################
@@ -1546,7 +1546,7 @@ RUN if [ ${INSTALL_PROTOC} = true ]; then \
 # Check PHP version:
 ###########################################################################
 
-RUN set -xe; php -v | head -n 1 | grep -q "PHP ${IVPLDOCK_PHP_VERSION}."
+RUN set -xe; php -v | head -n 1 | grep -q "PHP ${DEVDOCK_PHP_VERSION}."
 
 ###########################################################################
 # Oh My ZSH!
@@ -1562,10 +1562,10 @@ RUN if [ ${SHELL_OH_MY_ZSH} = true ]; then \
 ARG SHELL_OH_MY_ZSH_AUTOSUGESTIONS=false
 ARG SHELL_OH_MY_ZSH_ALIASES=false
 
-USER ivpldock
+USER devdock
 RUN if [ ${SHELL_OH_MY_ZSH} = true ]; then \
     sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh) --keep-zshrc" && \
-    sed -i -r 's/^plugins=\(.*?\)$/plugins=(laravel composer)/' /home/ivpldock/.zshrc && \
+    sed -i -r 's/^plugins=\(.*?\)$/plugins=(laravel composer)/' /home/devdock/.zshrc && \
     echo '\n\
 bindkey "^[OB" down-line-or-search\n\
 bindkey "^[OC" forward-char\n\
@@ -1577,20 +1577,20 @@ bindkey "^[[3~" delete-char\n\
 bindkey "^[[4~" end-of-line\n\
 bindkey "^[[5~" up-line-or-history\n\
 bindkey "^[[6~" down-line-or-history\n\
-bindkey "^?" backward-delete-char\n' >> /home/ivpldock/.zshrc && \
+bindkey "^?" backward-delete-char\n' >> /home/devdock/.zshrc && \
   if [ ${SHELL_OH_MY_ZSH_AUTOSUGESTIONS} = true ]; then \
-    sh -c "git clone https://github.com/zsh-users/zsh-autosuggestions /home/ivpldock/.oh-my-zsh/custom/plugins/zsh-autosuggestions" && \
-    sed -i 's~plugins=(~plugins=(zsh-autosuggestions ~g' /home/ivpldock/.zshrc && \
-    sed -i '1iZSH_AUTOSUGGEST_BUFFER_MAX_SIZE=20' /home/ivpldock/.zshrc && \
-    sed -i '1iZSH_AUTOSUGGEST_STRATEGY=(history completion)' /home/ivpldock/.zshrc && \
-    sed -i '1iZSH_AUTOSUGGEST_USE_ASYNC=1' /home/ivpldock/.zshrc && \
-    sed -i '1iTERM=xterm-256color' /home/ivpldock/.zshrc \
+    sh -c "git clone https://github.com/zsh-users/zsh-autosuggestions /home/devdock/.oh-my-zsh/custom/plugins/zsh-autosuggestions" && \
+    sed -i 's~plugins=(~plugins=(zsh-autosuggestions ~g' /home/devdock/.zshrc && \
+    sed -i '1iZSH_AUTOSUGGEST_BUFFER_MAX_SIZE=20' /home/devdock/.zshrc && \
+    sed -i '1iZSH_AUTOSUGGEST_STRATEGY=(history completion)' /home/devdock/.zshrc && \
+    sed -i '1iZSH_AUTOSUGGEST_USE_ASYNC=1' /home/devdock/.zshrc && \
+    sed -i '1iTERM=xterm-256color' /home/devdock/.zshrc \
   ;fi && \
   if [ ${SHELL_OH_MY_ZSH_ALIASES} = true ]; then \
-    echo "" >> /home/ivpldock/.zshrc && \
-    echo "# Load Custom Aliases" >> /home/ivpldock/.zshrc && \
-    echo "source /home/ivpldock/aliases.sh" >> /home/ivpldock/.zshrc && \
-    echo "" >> /home/ivpldock/.zshrc \
+    echo "" >> /home/devdock/.zshrc && \
+    echo "# Load Custom Aliases" >> /home/devdock/.zshrc && \
+    echo "source /home/devdock/aliases.sh" >> /home/devdock/.zshrc && \
+    echo "" >> /home/devdock/.zshrc \
   ;fi \
 ;fi
 
@@ -1603,19 +1603,19 @@ USER root
 USER root
 
 COPY ./aliases.sh /root/aliases.sh
-COPY ./aliases.sh /home/ivpldock/aliases.sh
+COPY ./aliases.sh /home/devdock/aliases.sh
 
 RUN if [ ${SHELL_OH_MY_ZSH} = true ]; then \
     sed -i 's/\r//' /root/aliases.sh && \
-    sed -i 's/\r//' /home/ivpldock/aliases.sh && \
-    chown ivpldock:ivpldock /home/ivpldock/aliases.sh && \
+    sed -i 's/\r//' /home/devdock/aliases.sh && \
+    chown devdock:devdock /home/devdock/aliases.sh && \
     echo "" >> ~/.zshrc && \
     echo "# Load Custom Aliases" >> ~/.zshrc && \
     echo "source ~/aliases.sh" >> ~/.zshrc && \
 	  echo "" >> ~/.zshrc \
 ;fi
 
-USER ivpldock
+USER devdock
 
 RUN if [ ${SHELL_OH_MY_ZSH} = true ]; then \
     echo "" >> ~/.zshrc && \
@@ -1641,8 +1641,8 @@ RUN if [ ${INSTALL_PHPDECIMAL} = true ]; then \
     else \
       apt-get install -yqq libmpdec-dev \
       && pecl install decimal \
-      && echo "extension=decimal.so" >> /etc/php/${IVPLDOCK_PHP_VERSION}/mods-available/decimal.ini \
-      && ln -s /etc/php/${IVPLDOCK_PHP_VERSION}/mods-available/decimal.ini /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/30-decimal.ini \
+      && echo "extension=decimal.so" >> /etc/php/${DEVDOCK_PHP_VERSION}/mods-available/decimal.ini \
+      && ln -s /etc/php/${DEVDOCK_PHP_VERSION}/mods-available/decimal.ini /etc/php/${DEVDOCK_PHP_VERSION}/cli/conf.d/30-decimal.ini \
       && php -m | grep -q 'decimal' \
     ;fi \
 ;fi
@@ -1668,8 +1668,8 @@ RUN set -eux; \
         pecl install zookeeper-0.7.2; \
       fi; \
     fi; \
-    echo "extension=zookeeper.so" >> /etc/php/${IVPLDOCK_PHP_VERSION}/mods-available/zookeeper.ini; \
-    ln -s /etc/php/${IVPLDOCK_PHP_VERSION}/mods-available/zookeeper.ini /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/30-zookeeper.ini; \
+    echo "extension=zookeeper.so" >> /etc/php/${DEVDOCK_PHP_VERSION}/mods-available/zookeeper.ini; \
+    ln -s /etc/php/${DEVDOCK_PHP_VERSION}/mods-available/zookeeper.ini /etc/php/${DEVDOCK_PHP_VERSION}/cli/conf.d/30-zookeeper.ini; \
     php -m | grep -q 'zookeeper'; \
     fi
 
@@ -1710,8 +1710,8 @@ ARG INSTALL_TRADER=false
 
 RUN if [ ${INSTALL_TRADER} = true ]; then \
     pecl install trader \
-    && echo "extension=trader.so" >> /etc/php/${IVPLDOCK_PHP_VERSION}/mods-available/trader.ini \
-    && ln -s /etc/php/${IVPLDOCK_PHP_VERSION}/mods-available/trader.ini /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/20-trader.ini \
+    && echo "extension=trader.so" >> /etc/php/${DEVDOCK_PHP_VERSION}/mods-available/trader.ini \
+    && ln -s /etc/php/${DEVDOCK_PHP_VERSION}/mods-available/trader.ini /etc/php/${DEVDOCK_PHP_VERSION}/cli/conf.d/20-trader.ini \
 ;fi
 
 #
@@ -1734,8 +1734,8 @@ RUN if [ ${INSTALL_ZMQ} = true ]; then \
     && make install \
     && cd .. \
     && rm -fr php-zmq \
-    && echo "extension=zmq.so" >> /etc/php/${IVPLDOCK_PHP_VERSION}/mods-available/zmq.ini \
-    && ln -s /etc/php/${IVPLDOCK_PHP_VERSION}/mods-available/zmq.ini /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/20-zmq.ini \
+    && echo "extension=zmq.so" >> /etc/php/${DEVDOCK_PHP_VERSION}/mods-available/zmq.ini \
+    && ln -s /etc/php/${DEVDOCK_PHP_VERSION}/mods-available/zmq.ini /etc/php/${DEVDOCK_PHP_VERSION}/cli/conf.d/20-zmq.ini \
 ;fi
 
 ############################################################################
@@ -1755,10 +1755,10 @@ RUN set -eux; \
       make &&\
       make install &&\
       rm /tmp/libevent.tar.gz &&\
-      if [ ! -f /etc/php/${IVPLDOCK_PHP_VERSION}/mods-available/sockets.ini ]; then\
-        echo "extension=sockets.so" >> /etc/php/${IVPLDOCK_PHP_VERSION}/mods-available/sockets.ini; \
+      if [ ! -f /etc/php/${DEVDOCK_PHP_VERSION}/mods-available/sockets.ini ]; then\
+        echo "extension=sockets.so" >> /etc/php/${DEVDOCK_PHP_VERSION}/mods-available/sockets.ini; \
       fi &&\
-      ln -sf /etc/php/${IVPLDOCK_PHP_VERSION}/mods-available/sockets.ini /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/20-sockets.ini && \
+      ln -sf /etc/php/${DEVDOCK_PHP_VERSION}/mods-available/sockets.ini /etc/php/${DEVDOCK_PHP_VERSION}/cli/conf.d/20-sockets.ini && \
       curl -L -o /tmp/event.tar.gz http://pecl.php.net/get/event-3.0.6.tgz &&\
       mkdir -p /tmp/event-php &&\
       tar -C /tmp/event-php -zxvf /tmp/event.tar.gz --strip 1 &&\
@@ -1768,8 +1768,8 @@ RUN set -eux; \
       make &&\
       make install &&\
       rm /tmp/event.tar.gz &&\
-      echo "extension=event.so" >> /etc/php/${IVPLDOCK_PHP_VERSION}/mods-available/event.ini && \
-      ln -s /etc/php/${IVPLDOCK_PHP_VERSION}/mods-available/event.ini /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/30-event.ini && \
+      echo "extension=event.so" >> /etc/php/${DEVDOCK_PHP_VERSION}/mods-available/event.ini && \
+      ln -s /etc/php/${DEVDOCK_PHP_VERSION}/mods-available/event.ini /etc/php/${DEVDOCK_PHP_VERSION}/cli/conf.d/30-event.ini && \
       php -m  | grep -q 'event' \
 ;fi
 
