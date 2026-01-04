@@ -376,7 +376,8 @@ services:
 ### MariaDB ##############################################
     mariadb:
       build:
-        context: ./.docker/mariadb
+        context: ./.docker
+        dockerfile: mariadb/Dockerfile
         args:
           - http_proxy
           - https_proxy
@@ -398,7 +399,9 @@ services:
 
   ### Redis ################################################
     redis:
-      build: ./.docker/redis
+      build:
+        context: ./.docker
+        dockerfile: redis/Dockerfile
       volumes:
         - ${DATA_PATH_HOST}/redis:/data
       command: --requirepass ${REDIS_PASSWORD}
@@ -409,7 +412,9 @@ services:
 
 ### Beanstalkd ###########################################
     beanstalkd:
-      build: ./.docker/beanstalkd
+      build:
+        context: ./.docker
+        dockerfile: beanstalkd/Dockerfile
       ports:
         - "${BEANSTALKD_HOST_PORT}:11300"
       privileged: true
@@ -420,7 +425,9 @@ services:
 
 ### Beanstalkd Console ###################################
     beanstalkd-console:
-      build: ./.docker/beanstalkd-console
+      build:
+        context: ./.docker
+        dockerfile: beanstalkd-console/Dockerfile
       ports:
         - "${BEANSTALKD_CONSOLE_HOST_PORT}:2080"
       depends_on:
@@ -430,7 +437,9 @@ services:
 
 ### phpMyAdmin ###########################################
     phpmyadmin:
-      build: ./.docker/phpmyadmin
+      build:
+        context: ./.docker
+        dockerfile: phpmyadmin/Dockerfile
       volumes:
       - ./.docker/phpmyadmin/config.user.inc.php:/etc/phpmyadmin/config.user.inc.php
       - ./resources/databases:/var/www/html/tmp/ivpldock_databases
@@ -453,7 +462,8 @@ services:
 ### REDISWEBUI ################################################
     redis-webui:
       build:
-        context: ./.docker/redis-webui
+        context: ./.docker
+        dockerfile: redis-webui/Dockerfile
       environment:
         - ADMIN_USER=${REDIS_WEBUI_USERNAME}
         - ADMIN_PASS=${REDIS_WEBUI_PASSWORD}
@@ -469,7 +479,9 @@ services:
 
 ### SWAGGER EDITOR ############################################
     swagger-editor:
-      build: ./.docker/swagger-editor
+      build:
+        context: ./.docker
+        dockerfile: swagger-editor/Dockerfile
       ports:
         - ${SWAGGER_EDITOR_PORT}:8080
       networks:
@@ -477,7 +489,9 @@ services:
 
 ### SWAGGER UI ################################################
     swagger-ui:
-      build: ./.docker/swagger-ui
+      build:
+        context: ./.docker
+        dockerfile: swagger-ui/Dockerfile
       environment:
         - API_URL=${SWAGGER_API_URL}
       ports:
