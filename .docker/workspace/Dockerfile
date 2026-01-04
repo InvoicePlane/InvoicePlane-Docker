@@ -236,14 +236,24 @@ RUN set -eux; \
     # BZ2:
     ###########################################################################
     if [ ${INSTALL_BZ2} = true ]; then \
-      apt-get -yqq install php${IVPLDOCK_PHP_VERSION}-bz2; \
+      (apt-get -yqq install php${IVPLDOCK_PHP_VERSION}-bz2 || \
+       (apt-get -yqq install libbz2-dev && \
+        pecl install bz2 && \
+        mkdir -p /etc/php/${IVPLDOCK_PHP_VERSION}/mods-available /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d && \
+        echo "extension=bz2.so" > /etc/php/${IVPLDOCK_PHP_VERSION}/mods-available/bz2.ini && \
+        ln -sf /etc/php/${IVPLDOCK_PHP_VERSION}/mods-available/bz2.ini /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/20-bz2.ini)); \
     fi; \
     ###########################################################################
     # GMP (GNU Multiple Precision):
     ###########################################################################
     if [ ${INSTALL_GMP} = true ]; then \
       # Install the PHP GMP extension
-      apt-get -yqq install php${IVPLDOCK_PHP_VERSION}-gmp; \
+      (apt-get -yqq install php${IVPLDOCK_PHP_VERSION}-gmp || \
+       (apt-get -yqq install libgmp-dev && \
+        pecl install gmp && \
+        mkdir -p /etc/php/${IVPLDOCK_PHP_VERSION}/mods-available /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d && \
+        echo "extension=gmp.so" > /etc/php/${IVPLDOCK_PHP_VERSION}/mods-available/gmp.ini && \
+        ln -sf /etc/php/${IVPLDOCK_PHP_VERSION}/mods-available/gmp.ini /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/20-gmp.ini)); \
     fi; \
     ###########################################################################
     # GnuPG:
@@ -285,7 +295,12 @@ RUN set -eux; \
     # IMAP:
     ###########################################################################
     if [ ${INSTALL_IMAP} = true ]; then \
-        apt-get install -yqq php${IVPLDOCK_PHP_VERSION}-imap; \
+        (apt-get install -yqq php${IVPLDOCK_PHP_VERSION}-imap || \
+         (apt-get install -yqq libc-client-dev libkrb5-dev && \
+          pecl install imap && \
+          mkdir -p /etc/php/${IVPLDOCK_PHP_VERSION}/mods-available /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d && \
+          echo "extension=imap.so" > /etc/php/${IVPLDOCK_PHP_VERSION}/mods-available/imap.ini && \
+          ln -sf /etc/php/${IVPLDOCK_PHP_VERSION}/mods-available/imap.ini /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/20-imap.ini)); \
     fi;
 
 ###########################################################################
@@ -347,7 +362,11 @@ ARG INSTALL_PHPREDIS=false
 
 RUN if [ ${INSTALL_PHPREDIS} = true ]; then \
     apt-get update \
-    && apt-get install -yqq php${IVPLDOCK_PHP_VERSION}-redis \
+    && (apt-get install -yqq php${IVPLDOCK_PHP_VERSION}-redis || \
+        (pecl install redis && \
+         mkdir -p /etc/php/${IVPLDOCK_PHP_VERSION}/mods-available /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d && \
+         echo "extension=redis.so" > /etc/php/${IVPLDOCK_PHP_VERSION}/mods-available/redis.ini && \
+         ln -sf /etc/php/${IVPLDOCK_PHP_VERSION}/mods-available/redis.ini /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/20-redis.ini)) \
 ;fi
 
 ###########################################################################
