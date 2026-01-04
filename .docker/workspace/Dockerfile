@@ -107,10 +107,10 @@ RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
 USER root
 
-COPY ./aliases.sh /root/aliases.sh
-COPY ./aliases.sh /home/ivpldock/aliases.sh
-COPY ./invoiceplane-banner.sh /root/invoiceplane-banner.sh
-COPY ./invoiceplane-banner.sh /home/ivpldock/invoiceplane-banner.sh
+COPY workspace/aliases.sh /root/aliases.sh
+COPY workspace/aliases.sh /home/ivpldock/aliases.sh
+COPY invoiceplane-banner.sh /root/invoiceplane-banner.sh
+COPY invoiceplane-banner.sh /home/ivpldock/invoiceplane-banner.sh
 
 RUN sed -i 's/\r//' /root/aliases.sh && \
     sed -i 's/\r//' /home/ivpldock/aliases.sh && \
@@ -155,10 +155,10 @@ RUN echo "" >> ~/.bashrc && \
 USER root
 
 # Add the composer.json
-COPY ./composer.json /home/ivpldock/.composer/composer.json
+COPY workspace/composer.json /home/ivpldock/.composer/composer.json
 
 # Add the auth.json for magento 2 credentials
-COPY ./auth.json /home/ivpldock/.composer/auth.json
+COPY workspace/auth.json /home/ivpldock/.composer/auth.json
 
 # Make sure that ~/.composer belongs to ivpldock
 RUN chown -R ivpldock:ivpldock /home/ivpldock/.composer
@@ -220,7 +220,7 @@ RUN echo "" >> ~/.bashrc && \
 
 USER root
 
-COPY ./crontab /etc/cron.d
+COPY workspace/crontab /etc/cron.d
 
 RUN chmod -R 644 /etc/cron.d
 
@@ -329,7 +329,7 @@ RUN echo "##### PHP Version #####" \
     "##### /PHP Version #####"
 
 # ADD for REMOTE debugging
-COPY ./xdebug.ini /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/xdebug.ini
+COPY workspace/xdebug.ini /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/xdebug.ini
 
 RUN if [ $(php -r "echo PHP_MAJOR_VERSION;") = "8" ] || { [ $(php -r "echo PHP_MAJOR_VERSION;") = "7" ] && { [ $(php -r "echo PHP_MINOR_VERSION;") = "4" ] || [ $(php -r "echo PHP_MINOR_VERSION;") = "3" ] ;} ;}; then \
   sed -i "s/xdebug.remote_host=/xdebug.client_host=/" /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/xdebug.ini && \
@@ -470,8 +470,8 @@ RUN find $NVM_DIR -type f -name node -exec ln -s {} /usr/local/bin/node \; && \
     ln -s $NODE_MODS_DIR/npm/bin/npx-cli.js /usr/local/bin/npx
 
 # Mount .npmrc into home folder
-COPY ./.npmrc /root/.npmrc
-COPY ./.npmrc /home/${IVPLDOCK_USER}/.npmrc
+COPY workspace/.npmrc /root/.npmrc
+COPY workspace/.npmrc /home/${IVPLDOCK_USER}/.npmrc
 
 ###########################################################################
 # YARN:
@@ -633,7 +633,7 @@ RUN if [ ${INSTALL_WKHTMLTOPDF} = true ]; then \
 
 ARG INSTALL_GIT_PROMPT=false
 
-COPY git-prompt.sh /tmp/git-prompt
+COPY workspace/git-prompt.sh /tmp/git-prompt
 
 RUN if [ ${INSTALL_GIT_PROMPT} = true ]; then \
     git clone https://github.com/magicmonty/bash-git-prompt.git /root/.bash-git-prompt --depth=1 && \
@@ -701,8 +701,8 @@ USER root
 
 USER root
 
-COPY ./aliases.sh /root/aliases.sh
-COPY ./aliases.sh /home/ivpldock/aliases.sh
+COPY workspace/aliases.sh /root/aliases.sh
+COPY workspace/aliases.sh /home/ivpldock/aliases.sh
 
 RUN if [ ${SHELL_OH_MY_ZSH} = true ]; then \
     sed -i 's/\r//' /root/aliases.sh && \

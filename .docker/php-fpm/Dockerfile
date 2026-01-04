@@ -239,7 +239,7 @@ RUN if [ ${INSTALL_XDEBUG} = true ]; then \
 ;fi
 
 # Copy xdebug configuration for remote debugging
-COPY ./xdebug.ini /usr/local/etc/php/conf.d/xdebug.ini
+COPY php-fpm/xdebug.ini /usr/local/etc/php/conf.d/xdebug.ini
 
 RUN if [ $(php -r "echo PHP_MAJOR_VERSION;") = "8" ] || { [ $(php -r "echo PHP_MAJOR_VERSION;") = "7" ] && { [ $(php -r "echo PHP_MINOR_VERSION;") = "4" ] || [ $(php -r "echo PHP_MINOR_VERSION;") = "3" ] ;} ;}; then \
   sed -i "s/xdebug.remote_host=/xdebug.client_host=/" /usr/local/etc/php/conf.d/xdebug.ini && \
@@ -690,7 +690,7 @@ RUN if [ ${INSTALL_OPCACHE} = true ]; then \
 ;fi
 
 # Copy opcache configration
-COPY ./opcache.ini /usr/local/etc/php/conf.d/opcache.ini
+COPY php-fpm/opcache.ini /usr/local/etc/php/conf.d/opcache.ini
 
 ###########################################################################
 # Mysqli Modifications:
@@ -1368,8 +1368,8 @@ RUN set -xe; php -v | grep -q "PHP ${IVPLDOCK_PHP_VERSION}."
 #--------------------------------------------------------------------------
 #
 
-COPY ./laravel.ini /usr/local/etc/php/conf.d
-COPY ./xlaravel.pool.conf /usr/local/etc/php-fpm.d/
+COPY php-fpm/laravel.ini /usr/local/etc/php/conf.d
+COPY php-fpm/xlaravel.pool.conf /usr/local/etc/php-fpm.d/
 
 USER root
 
@@ -1400,7 +1400,7 @@ ENV LC_ALL ${LOCALE}
 RUN echo "php_admin_value[memory_limit] = 1024M" >> /usr/local/etc/php-fpm.d/www.conf
 
 # Add InvoicePlane banner to bash profile
-COPY ./invoiceplane-banner.sh /root/invoiceplane-banner.sh
+COPY invoiceplane-banner.sh /root/invoiceplane-banner.sh
 RUN chmod +x /root/invoiceplane-banner.sh && \
     echo "" >> /root/.bashrc && \
     echo "# Set container type for banner" >> /root/.bashrc && \
