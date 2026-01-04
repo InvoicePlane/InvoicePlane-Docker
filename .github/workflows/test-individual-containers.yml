@@ -1,0 +1,341 @@
+name: Test Individual Containers
+
+on:
+  push:
+    branches: [ master, develop ]
+  pull_request:
+    branches: [ master, develop ]
+  workflow_dispatch:
+    inputs:
+      container:
+        description: 'Specific container to test (leave empty for all)'
+        required: false
+        type: choice
+        options:
+          - ''
+          - workspace
+          - php-fpm
+          - php-worker
+          - nginx
+          - mariadb
+          - redis
+          - beanstalkd
+          - beanstalkd-console
+          - phpmyadmin
+
+jobs:
+  # Test workspace container individually
+  test-workspace:
+    name: Test Workspace - PHP ${{ matrix.php-version }}
+    runs-on: ubuntu-latest
+    if: ${{ !inputs.container || inputs.container == 'workspace' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        php-version: ['8.2', '8.3', '8.4']
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Create .env file
+        run: |
+          cp .env.example .env.docker
+          sed -i "s/PHP_VERSION=8.1/PHP_VERSION=${{ matrix.php-version }}/" .env.docker
+
+      - name: Build workspace container
+        run: docker-compose --env-file .env.docker build workspace
+        timeout-minutes: 30
+
+      - name: Start workspace container
+        run: docker-compose --env-file .env.docker up -d workspace
+        timeout-minutes: 5
+
+      - name: Verify PHP version
+        run: docker-compose --env-file .env.docker exec -T workspace php -v
+
+      - name: Verify PHP extensions
+        run: |
+          echo "=== Checking critical PHP extensions ==="
+          docker-compose --env-file .env.docker exec -T workspace php -m | grep -E 'zip|mbstring|curl|openssl|json|xml'
+
+      - name: Verify Composer
+        run: docker-compose --env-file .env.docker exec -T workspace composer --version
+
+      - name: Verify Node.js
+        run: docker-compose --env-file .env.docker exec -T workspace node --version
+
+      - name: Test workspace user
+        run: |
+          docker-compose --env-file .env.docker exec -T --user=ivpldock workspace whoami
+          docker-compose --env-file .env.docker exec -T --user=ivpldock workspace id
+
+      - name: Cleanup
+        if: always()
+        run: docker-compose --env-file .env.docker down -v
+
+  # Test php-fpm container individually  
+  test-php-fpm:
+    name: Test PHP-FPM - PHP ${{ matrix.php-version }}
+    runs-on: ubuntu-latest
+    if: ${{ !inputs.container || inputs.container == 'php-fpm' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        php-version: ['8.2', '8.3', '8.4']
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Create .env file
+        run: |
+          cp .env.example .env.docker
+          sed -i "s/PHP_VERSION=8.1/PHP_VERSION=${{ matrix.php-version }}/" .env.docker
+
+      - name: Build php-fpm container
+        run: docker-compose --env-file .env.docker build php-fpm
+        timeout-minutes: 30
+
+      - name: Start php-fpm container
+        run: docker-compose --env-file .env.docker up -d php-fpm
+        timeout-minutes: 5
+
+      - name: Verify PHP version
+        run: docker-compose --env-file .env.docker exec -T php-fpm php -v
+
+      - name: Verify PHP extensions
+        run: |
+          echo "=== Checking critical PHP extensions ==="
+          docker-compose --env-file .env.docker exec -T php-fpm php -m | grep -E 'zip|mbstring|curl|openssl|json|xml|mysqli|pdo_mysql'
+
+      - name: Verify PHP-FPM is running
+        run: docker-compose --env-file .env.docker exec -T php-fpm php-fpm -t
+
+      - name: Cleanup
+        if: always()
+        run: docker-compose --env-file .env.docker down -v
+
+  # Test php-worker container individually
+  test-php-worker:
+    name: Test PHP-Worker - PHP ${{ matrix.php-version }}
+    runs-on: ubuntu-latest
+    if: ${{ !inputs.container || inputs.container == 'php-worker' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        php-version: ['8.2', '8.3', '8.4']
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Create .env file
+        run: |
+          cp .env.example .env.docker
+          sed -i "s/PHP_VERSION=8.1/PHP_VERSION=${{ matrix.php-version }}/" .env.docker
+
+      - name: Build php-worker container
+        run: docker-compose --env-file .env.docker build php-worker
+        timeout-minutes: 30
+
+      - name: Start php-worker container
+        run: docker-compose --env-file .env.docker up -d php-worker
+        timeout-minutes: 5
+
+      - name: Verify PHP version
+        run: docker-compose --env-file .env.docker exec -T php-worker php -v
+
+      - name: Verify PHP extensions
+        run: |
+          echo "=== Checking critical PHP extensions ==="
+          docker-compose --env-file .env.docker exec -T php-worker php -m | grep -E 'zip|mbstring|curl|openssl|json|xml|mysqli|pdo_mysql'
+
+      - name: Cleanup
+        if: always()
+        run: docker-compose --env-file .env.docker down -v
+
+  # Test nginx container
+  test-nginx:
+    name: Test Nginx
+    runs-on: ubuntu-latest
+    if: ${{ !inputs.container || inputs.container == 'nginx' }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Create .env file
+        run: cp .env.example .env.docker
+
+      - name: Build nginx container
+        run: docker-compose --env-file .env.docker build nginx
+        timeout-minutes: 15
+
+      - name: Start nginx container
+        run: docker-compose --env-file .env.docker up -d nginx
+        timeout-minutes: 5
+
+      - name: Verify nginx configuration
+        run: docker-compose --env-file .env.docker exec -T nginx nginx -t
+
+      - name: Verify nginx is running
+        run: docker-compose --env-file .env.docker exec -T nginx nginx -v
+
+      - name: Cleanup
+        if: always()
+        run: docker-compose --env-file .env.docker down -v
+
+  # Test mariadb container
+  test-mariadb:
+    name: Test MariaDB
+    runs-on: ubuntu-latest
+    if: ${{ !inputs.container || inputs.container == 'mariadb' }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Create .env file
+        run: cp .env.example .env.docker
+
+      - name: Build mariadb container
+        run: docker-compose --env-file .env.docker build mariadb
+        timeout-minutes: 15
+
+      - name: Start mariadb container
+        run: docker-compose --env-file .env.docker up -d mariadb
+        timeout-minutes: 5
+
+      - name: Wait for MariaDB to be ready
+        run: sleep 15
+
+      - name: Verify MariaDB version
+        run: docker-compose --env-file .env.docker exec -T mariadb mysql --version
+
+      - name: Test MariaDB connection
+        run: |
+          docker-compose --env-file .env.docker exec -T mariadb \
+            mysql -uroot -proot -e "SELECT 1;"
+
+      - name: Cleanup
+        if: always()
+        run: docker-compose --env-file .env.docker down -v
+
+  # Test redis container
+  test-redis:
+    name: Test Redis
+    runs-on: ubuntu-latest
+    if: ${{ !inputs.container || inputs.container == 'redis' }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Create .env file
+        run: cp .env.example .env.docker
+
+      - name: Build redis container
+        run: docker-compose --env-file .env.docker build redis
+        timeout-minutes: 15
+
+      - name: Start redis container
+        run: docker-compose --env-file .env.docker up -d redis
+        timeout-minutes: 5
+
+      - name: Verify Redis is running
+        run: docker-compose --env-file .env.docker exec -T redis redis-cli ping
+
+      - name: Test Redis operations
+        run: |
+          docker-compose --env-file .env.docker exec -T redis redis-cli set test_key "test_value"
+          docker-compose --env-file .env.docker exec -T redis redis-cli get test_key
+
+      - name: Cleanup
+        if: always()
+        run: docker-compose --env-file .env.docker down -v
+
+  # Test beanstalkd container
+  test-beanstalkd:
+    name: Test Beanstalkd
+    runs-on: ubuntu-latest
+    if: ${{ !inputs.container || inputs.container == 'beanstalkd' }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Create .env file
+        run: cp .env.example .env.docker
+
+      - name: Build beanstalkd container
+        run: docker-compose --env-file .env.docker build beanstalkd
+        timeout-minutes: 15
+
+      - name: Start beanstalkd container
+        run: docker-compose --env-file .env.docker up -d beanstalkd
+        timeout-minutes: 5
+
+      - name: Verify beanstalkd is running
+        run: docker ps | grep beanstalkd
+
+      - name: Cleanup
+        if: always()
+        run: docker-compose --env-file .env.docker down -v
+
+  # Test phpmyadmin container
+  test-phpmyadmin:
+    name: Test phpMyAdmin
+    runs-on: ubuntu-latest
+    if: ${{ !inputs.container || inputs.container == 'phpmyadmin' }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Create .env file
+        run: cp .env.example .env.docker
+
+      - name: Build phpmyadmin container
+        run: docker-compose --env-file .env.docker build phpmyadmin
+        timeout-minutes: 15
+
+      - name: Start mariadb and phpmyadmin containers
+        run: docker-compose --env-file .env.docker up -d mariadb phpmyadmin
+        timeout-minutes: 10
+
+      - name: Wait for services to be ready
+        run: sleep 20
+
+      - name: Verify phpMyAdmin is accessible
+        run: |
+          docker-compose --env-file .env.docker exec -T phpmyadmin php -v
+          docker ps | grep phpmyadmin
+
+      - name: Cleanup
+        if: always()
+        run: docker-compose --env-file .env.docker down -v

@@ -109,10 +109,22 @@ USER root
 
 COPY ./aliases.sh /root/aliases.sh
 COPY ./aliases.sh /home/ivpldock/aliases.sh
+COPY ./invoiceplane-banner.sh /root/invoiceplane-banner.sh
+COPY ./invoiceplane-banner.sh /home/ivpldock/invoiceplane-banner.sh
 
 RUN sed -i 's/\r//' /root/aliases.sh && \
     sed -i 's/\r//' /home/ivpldock/aliases.sh && \
+    sed -i 's/\r//' /root/invoiceplane-banner.sh && \
+    sed -i 's/\r//' /home/ivpldock/invoiceplane-banner.sh && \
     chown ivpldock:ivpldock /home/ivpldock/aliases.sh && \
+    chown ivpldock:ivpldock /home/ivpldock/invoiceplane-banner.sh && \
+    chmod +x /root/invoiceplane-banner.sh && \
+    chmod +x /home/ivpldock/invoiceplane-banner.sh && \
+    echo "" >> ~/.bashrc && \
+    echo "# Load InvoicePlane Banner" >> ~/.bashrc && \
+    echo "if [ -f ~/invoiceplane-banner.sh ]; then" >> ~/.bashrc && \
+    echo "    source ~/invoiceplane-banner.sh" >> ~/.bashrc && \
+    echo "fi" >> ~/.bashrc && \
     echo "" >> ~/.bashrc && \
     echo "# Load Custom Aliases" >> ~/.bashrc && \
     echo "export PS1='\W\$ '" >> ~/.bashrc && \
@@ -122,6 +134,11 @@ RUN sed -i 's/\r//' /root/aliases.sh && \
 USER ivpldock
 
 RUN echo "" >> ~/.bashrc && \
+    echo "# Load InvoicePlane Banner" >> ~/.bashrc && \
+    echo "if [ -f ~/invoiceplane-banner.sh ]; then" >> ~/.bashrc && \
+    echo "    source ~/invoiceplane-banner.sh" >> ~/.bashrc && \
+    echo "fi" >> ~/.bashrc && \
+    echo "" >> ~/.bashrc && \
     echo "# Load Custom Aliases" >> ~/.bashrc && \
     echo "export PS1='\W\$ '" >> ~/.bashrc && \
     echo "source ~/aliases.sh" >> ~/.bashrc && \

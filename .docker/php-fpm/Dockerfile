@@ -1399,6 +1399,15 @@ ENV LC_ALL ${LOCALE}
 
 RUN echo "php_admin_value[memory_limit] = 1024M" >> /usr/local/etc/php-fpm.d/www.conf
 
+# Add InvoicePlane banner to bash profile
+COPY ./invoiceplane-banner.sh /root/invoiceplane-banner.sh
+RUN chmod +x /root/invoiceplane-banner.sh && \
+    echo "" >> /root/.bashrc && \
+    echo "# Load InvoicePlane Banner" >> /root/.bashrc && \
+    echo "if [ -f ~/invoiceplane-banner.sh ]; then" >> /root/.bashrc && \
+    echo "    source ~/invoiceplane-banner.sh" >> /root/.bashrc && \
+    echo "fi" >> /root/.bashrc
+
 WORKDIR /var/www/projects
 
 CMD ["php-fpm"]
