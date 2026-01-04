@@ -631,7 +631,31 @@ RUN set -eux; \
 # Make sure you rebuild your container with every change.
 #
 
-COPY supervisord.conf /etc/supervisord.conf
+COPY php-worker/supervisord.conf /etc/supervisord.conf
+
+# Add InvoicePlane banner to bash profile
+COPY invoiceplane-banner.sh /root/invoiceplane-banner.sh
+RUN chmod +x /root/invoiceplane-banner.sh && \
+    echo "" >> /root/.bashrc && \
+    echo "# Set container type for banner" >> /root/.bashrc && \
+    echo "export CONTAINER_TYPE='PHP Worker Container'" >> /root/.bashrc && \
+    echo "# Load InvoicePlane Banner" >> /root/.bashrc && \
+    echo "if [ -f ~/invoiceplane-banner.sh ]; then" >> /root/.bashrc && \
+    echo "    source ~/invoiceplane-banner.sh" >> /root/.bashrc && \
+    echo "fi" >> /root/.bashrc && \
+    # Also add banner for laradock user \
+    cp /root/invoiceplane-banner.sh /home/laradock/invoiceplane-banner.sh && \
+    chown laradock:laradock /home/laradock/invoiceplane-banner.sh && \
+    chmod +x /home/laradock/invoiceplane-banner.sh && \
+    touch /home/laradock/.bashrc && \
+    chown laradock:laradock /home/laradock/.bashrc && \
+    echo "" >> /home/laradock/.bashrc && \
+    echo "# Set container type for banner" >> /home/laradock/.bashrc && \
+    echo "export CONTAINER_TYPE='PHP Worker Container'" >> /home/laradock/.bashrc && \
+    echo "# Load InvoicePlane Banner" >> /home/laradock/.bashrc && \
+    echo "if [ -f ~/invoiceplane-banner.sh ]; then" >> /home/laradock/.bashrc && \
+    echo "    source ~/invoiceplane-banner.sh" >> /home/laradock/.bashrc && \
+    echo "fi" >> /home/laradock/.bashrc
 
 ENTRYPOINT ["/usr/bin/supervisord", "-n", "-c",  "/etc/supervisord.conf"]
 
