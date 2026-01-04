@@ -101,13 +101,15 @@ ls -la .env.docker
 
 ### Want to see running containers?
 ```bash
-docker-compose --env-file .env.docker ps
+docker compose --env-file .env.docker ps
 ```
 
 ### View container logs?
 ```bash
-docker-compose --env-file .env.docker logs -f <container_name>
+docker compose --env-file .env.docker logs -f <container_name>
 ```
+
+> **Note**: The helper scripts use `docker-compose` for backward compatibility, but `docker compose` (v2) is recommended for manual commands.
 
 ## Origins
 
