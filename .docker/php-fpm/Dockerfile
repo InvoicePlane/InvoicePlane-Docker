@@ -1406,7 +1406,19 @@ RUN chmod +x /root/invoiceplane-banner.sh && \
     echo "# Load InvoicePlane Banner" >> /root/.bashrc && \
     echo "if [ -f ~/invoiceplane-banner.sh ]; then" >> /root/.bashrc && \
     echo "    source ~/invoiceplane-banner.sh" >> /root/.bashrc && \
-    echo "fi" >> /root/.bashrc
+    echo "fi" >> /root/.bashrc && \
+    # Also add banner for www-data user \
+    mkdir -p /home/www-data && \
+    cp /root/invoiceplane-banner.sh /home/www-data/invoiceplane-banner.sh && \
+    chown www-data:www-data /home/www-data/invoiceplane-banner.sh && \
+    chmod +x /home/www-data/invoiceplane-banner.sh && \
+    touch /home/www-data/.bashrc && \
+    chown www-data:www-data /home/www-data/.bashrc && \
+    echo "" >> /home/www-data/.bashrc && \
+    echo "# Load InvoicePlane Banner" >> /home/www-data/.bashrc && \
+    echo "if [ -f ~/invoiceplane-banner.sh ]; then" >> /home/www-data/.bashrc && \
+    echo "    source ~/invoiceplane-banner.sh" >> /home/www-data/.bashrc && \
+    echo "fi" >> /home/www-data/.bashrc
 
 WORKDIR /var/www/projects
 

@@ -3,7 +3,7 @@
 # This file is sourced by container bash profiles
 
 # Colors
-BLUE='\033[0;34m'
+BLUE='\033[38;2;66;154;225m'  # #429AE1
 CYAN='\033[0;36m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -19,11 +19,11 @@ cat << 'EOF'
                                                               
 EOF
 
-echo -e "${CYAN}╔════════════════════════════════════════════════════════════╗${NC}"
-echo -e "${CYAN}║${NC}  Welcome to InvoicePlane Docker Environment               ${CYAN}║${NC}"
-echo -e "${CYAN}║${NC}  Container: ${GREEN}$(hostname)${NC}                                    ${CYAN}║${NC}"
-echo -e "${CYAN}║${NC}  User: ${YELLOW}$(whoami)${NC}                                           ${CYAN}║${NC}"
-echo -e "${CYAN}╚════════════════════════════════════════════════════════════╝${NC}"
+echo -e "${BLUE}╔════════════════════════════════════════════════════════════╗${NC}"
+echo -e "${BLUE}║${NC}  Welcome to InvoicePlane Docker Environment               ${BLUE}║${NC}"
+echo -e "${BLUE}║${NC}  Container: ${GREEN}$(hostname)${NC}                                    ${BLUE}║${NC}"
+echo -e "${BLUE}║${NC}  User: ${YELLOW}$(whoami)${NC}                                           ${BLUE}║${NC}"
+echo -e "${BLUE}╚════════════════════════════════════════════════════════════╝${NC}"
 echo ""
 echo -e "${BLUE}Quick Commands:${NC}"
 echo -e "  ${GREEN}php -v${NC}        - Check PHP version"

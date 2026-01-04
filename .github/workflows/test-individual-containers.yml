@@ -13,15 +13,15 @@ on:
         type: choice
         options:
           - ''
-          - workspace
-          - php-fpm
-          - php-worker
-          - nginx
-          - mariadb
-          - redis
           - beanstalkd
           - beanstalkd-console
+          - mariadb
+          - nginx
+          - php-fpm
+          - php-worker
           - phpmyadmin
+          - redis
+          - workspace
 
 jobs:
   # Test workspace container individually
