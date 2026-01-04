@@ -29,6 +29,7 @@ RUN sed -i 's/\r//g' /opt/startup.sh
 
 # Add InvoicePlane banner to bash profile
 COPY invoiceplane-banner.sh /root/invoiceplane-banner.sh
+RUN sed -i 's/\r//g' /root/invoiceplane-banner.sh
 RUN chmod +x /root/invoiceplane-banner.sh && \
     echo "" >> /root/.bashrc && \
     echo "# Set container type for banner" >> /root/.bashrc && \
