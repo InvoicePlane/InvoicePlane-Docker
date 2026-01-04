@@ -290,7 +290,8 @@ services:
 ### PHP Worker ############################################
     php-worker:
       build:
-        context: ./.docker/php-worker
+        context: ./.docker
+        dockerfile: php-worker/Dockerfile
         args:
           - CHANGE_SOURCE=${CHANGE_SOURCE}
           - IVPLDOCK_PHP_VERSION=${PHP_VERSION}
@@ -348,7 +349,8 @@ services:
 ### NGINX Server #########################################
     nginx:
       build:
-        context: ./.docker/nginx
+        context: ./.docker
+        dockerfile: nginx/Dockerfile
         args:
           - CHANGE_SOURCE=${CHANGE_SOURCE}
           - PHP_UPSTREAM_CONTAINER=${NGINX_PHP_UPSTREAM_CONTAINER}
