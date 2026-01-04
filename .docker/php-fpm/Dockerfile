@@ -1400,7 +1400,7 @@ ENV LC_ALL ${LOCALE}
 RUN echo "php_admin_value[memory_limit] = 1024M" >> /usr/local/etc/php-fpm.d/www.conf
 
 # Add InvoicePlane banner to bash profile
-COPY ../invoiceplane-banner.sh /root/invoiceplane-banner.sh
+COPY ./invoiceplane-banner.sh /root/invoiceplane-banner.sh
 RUN chmod +x /root/invoiceplane-banner.sh && \
     echo "" >> /root/.bashrc && \
     echo "# Set container type for banner" >> /root/.bashrc && \
