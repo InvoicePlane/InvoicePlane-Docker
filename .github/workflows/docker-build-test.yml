@@ -30,41 +30,41 @@ jobs:
 
       - name: Build workspace container
         run: |
-          docker-compose --env-file .env.docker build workspace
+          docker compose --env-file .env.docker build workspace
         timeout-minutes: 30
 
       - name: Build php-fpm container
         run: |
-          docker-compose --env-file .env.docker build php-fpm
+          docker compose --env-file .env.docker build php-fpm
         timeout-minutes: 30
 
       - name: Build php-worker container
         run: |
-          docker-compose --env-file .env.docker build php-worker
+          docker compose --env-file .env.docker build php-worker
         timeout-minutes: 30
 
       - name: Start containers
         run: |
-          docker-compose --env-file .env.docker up -d workspace php-fpm
+          docker compose --env-file .env.docker up -d workspace php-fpm
         timeout-minutes: 10
 
       - name: Verify PHP version in workspace
         run: |
-          docker-compose --env-file .env.docker exec -T workspace php -v
+          docker compose --env-file .env.docker exec -T workspace php -v
 
       - name: Verify zip extension in workspace
         run: |
-          docker-compose --env-file .env.docker exec -T workspace php -m | grep zip
+          docker compose --env-file .env.docker exec -T workspace php -m | grep zip
 
       - name: Verify PHP version in php-fpm
         run: |
-          docker-compose --env-file .env.docker exec -T php-fpm php -v
+          docker compose --env-file .env.docker exec -T php-fpm php -v
 
       - name: Verify zip extension in php-fpm
         run: |
-          docker-compose --env-file .env.docker exec -T php-fpm php -m | grep zip
+          docker compose --env-file .env.docker exec -T php-fpm php -m | grep zip
 
       - name: Cleanup
         if: always()
         run: |
-          docker-compose --env-file .env.docker down -v
+          docker compose --env-file .env.docker down -v
