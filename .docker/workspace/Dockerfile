@@ -109,8 +109,8 @@ USER root
 
 COPY ./aliases.sh /root/aliases.sh
 COPY ./aliases.sh /home/ivpldock/aliases.sh
-COPY ../invoiceplane-banner.sh /root/invoiceplane-banner.sh
-COPY ../invoiceplane-banner.sh /home/ivpldock/invoiceplane-banner.sh
+COPY ./invoiceplane-banner.sh /root/invoiceplane-banner.sh
+COPY ./invoiceplane-banner.sh /home/ivpldock/invoiceplane-banner.sh
 
 RUN sed -i 's/\r//' /root/aliases.sh && \
     sed -i 's/\r//' /home/ivpldock/aliases.sh && \
