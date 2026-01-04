@@ -18,7 +18,8 @@ services:
 ### Workspace Utilities ##################################
     workspace:
       build:
-        context: ./.docker/workspace
+        context: ./.docker
+        dockerfile: workspace/Dockerfile
         args:
           - CHANGE_SOURCE=${CHANGE_SOURCE}
           - SHELL_OH_MY_ZSH=${SHELL_OH_MY_ZSH}
@@ -175,7 +176,8 @@ services:
 ### PHP-FPM ##############################################
     php-fpm:
       build:
-        context: ./.docker/php-fpm
+        context: ./.docker
+        dockerfile: php-fpm/Dockerfile
         args:
           - CHANGE_SOURCE=${CHANGE_SOURCE}
           - BASE_IMAGE_TAG_PREFIX=${PHP_FPM_BASE_IMAGE_TAG_PREFIX}
