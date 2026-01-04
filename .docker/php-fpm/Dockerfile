@@ -1400,9 +1400,11 @@ ENV LC_ALL ${LOCALE}
 RUN echo "php_admin_value[memory_limit] = 1024M" >> /usr/local/etc/php-fpm.d/www.conf
 
 # Add InvoicePlane banner to bash profile
-COPY ./invoiceplane-banner.sh /root/invoiceplane-banner.sh
+COPY ../shared/invoiceplane-banner.sh /root/invoiceplane-banner.sh
 RUN chmod +x /root/invoiceplane-banner.sh && \
     echo "" >> /root/.bashrc && \
+    echo "# Set container type for banner" >> /root/.bashrc && \
+    echo "export CONTAINER_TYPE='PHP-FPM Container'" >> /root/.bashrc && \
     echo "# Load InvoicePlane Banner" >> /root/.bashrc && \
     echo "if [ -f ~/invoiceplane-banner.sh ]; then" >> /root/.bashrc && \
     echo "    source ~/invoiceplane-banner.sh" >> /root/.bashrc && \
@@ -1415,6 +1417,8 @@ RUN chmod +x /root/invoiceplane-banner.sh && \
     touch /home/www-data/.bashrc && \
     chown www-data:www-data /home/www-data/.bashrc && \
     echo "" >> /home/www-data/.bashrc && \
+    echo "# Set container type for banner" >> /home/www-data/.bashrc && \
+    echo "export CONTAINER_TYPE='PHP-FPM Container'" >> /home/www-data/.bashrc && \
     echo "# Load InvoicePlane Banner" >> /home/www-data/.bashrc && \
     echo "if [ -f ~/invoiceplane-banner.sh ]; then" >> /home/www-data/.bashrc && \
     echo "    source ~/invoiceplane-banner.sh" >> /home/www-data/.bashrc && \
