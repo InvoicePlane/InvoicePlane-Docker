@@ -109,8 +109,8 @@ USER root
 
 COPY ./aliases.sh /root/aliases.sh
 COPY ./aliases.sh /home/ivpldock/aliases.sh
-COPY ./invoiceplane-banner.sh /root/invoiceplane-banner.sh
-COPY ./invoiceplane-banner.sh /home/ivpldock/invoiceplane-banner.sh
+COPY ../shared/invoiceplane-banner.sh /root/invoiceplane-banner.sh
+COPY ../shared/invoiceplane-banner.sh /home/ivpldock/invoiceplane-banner.sh
 
 RUN sed -i 's/\r//' /root/aliases.sh && \
     sed -i 's/\r//' /home/ivpldock/aliases.sh && \
@@ -121,26 +121,30 @@ RUN sed -i 's/\r//' /root/aliases.sh && \
     chmod +x /root/invoiceplane-banner.sh && \
     chmod +x /home/ivpldock/invoiceplane-banner.sh && \
     echo "" >> ~/.bashrc && \
+    echo "# Set container type for banner" >> ~/.bashrc && \
+    echo "export CONTAINER_TYPE='Workspace Container'" >> ~/.bashrc && \
     echo "# Load InvoicePlane Banner" >> ~/.bashrc && \
     echo "if [ -f ~/invoiceplane-banner.sh ]; then" >> ~/.bashrc && \
     echo "    source ~/invoiceplane-banner.sh" >> ~/.bashrc && \
     echo "fi" >> ~/.bashrc && \
     echo "" >> ~/.bashrc && \
     echo "# Load Custom Aliases" >> ~/.bashrc && \
-    echo "export PS1='\W\$ '" >> ~/.bashrc && \
+    echo "export PS1='\\W\$ '" >> ~/.bashrc && \
     echo "source ~/aliases.sh" >> ~/.bashrc && \
     echo "" >> ~/.bashrc
 
 USER ivpldock
 
 RUN echo "" >> ~/.bashrc && \
+    echo "# Set container type for banner" >> ~/.bashrc && \
+    echo "export CONTAINER_TYPE='Workspace Container'" >> ~/.bashrc && \
     echo "# Load InvoicePlane Banner" >> ~/.bashrc && \
     echo "if [ -f ~/invoiceplane-banner.sh ]; then" >> ~/.bashrc && \
     echo "    source ~/invoiceplane-banner.sh" >> ~/.bashrc && \
     echo "fi" >> ~/.bashrc && \
     echo "" >> ~/.bashrc && \
     echo "# Load Custom Aliases" >> ~/.bashrc && \
-    echo "export PS1='\W\$ '" >> ~/.bashrc && \
+    echo "export PS1='\\W\$ '" >> ~/.bashrc && \
     echo "source ~/aliases.sh" >> ~/.bashrc && \
     echo "" >> ~/.bashrc
 
