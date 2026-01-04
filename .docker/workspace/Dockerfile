@@ -74,8 +74,10 @@ RUN set -xe; \
       nasm && \
     # Install the zip extension - try package first, fallback to PECL
     (apt-get install -yqq php${IVPLDOCK_PHP_VERSION}-zip || \
-     (pecl install zip && echo "extension=zip.so" > /etc/php/${IVPLDOCK_PHP_VERSION}/mods-available/zip.ini && \
-      ln -s /etc/php/${IVPLDOCK_PHP_VERSION}/mods-available/zip.ini /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/20-zip.ini)) && \
+     (pecl install zip && \
+      mkdir -p /etc/php/${IVPLDOCK_PHP_VERSION}/mods-available /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d && \
+      echo "extension=zip.so" > /etc/php/${IVPLDOCK_PHP_VERSION}/mods-available/zip.ini && \
+      ln -sf /etc/php/${IVPLDOCK_PHP_VERSION}/mods-available/zip.ini /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/20-zip.ini)) && \
     php -m | grep -q 'zip'
 
 #
