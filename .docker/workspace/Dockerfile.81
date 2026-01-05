@@ -281,9 +281,9 @@ ARG INSTALL_XDEBUG=false
 ARG XDEBUG_CLIENT_HOST
 ARG XDEBUG_PORT=9003
 
-RUN apt-get install -yqq pkg-config php-xml php${IVPLDOCK_PHP_VERSION}-xml && \
-  pecl install xdebug-3.3.0 && \
-  echo "zend_extension=xdebug.so" >> /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/20-xdebug.ini
+RUN (apt-get install -yqq pkg-config php-xml php${IVPLDOCK_PHP_VERSION}-xml || true) && \
+  (pecl install xdebug-3.3.0 || true) && \
+  (echo "zend_extension=xdebug.so" >> /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/20-xdebug.ini || true)
 
 RUN echo "##### PHP Version #####" \
     ${IVPLDOCK_PHP_VERSION} \

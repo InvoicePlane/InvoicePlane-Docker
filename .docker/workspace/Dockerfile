@@ -240,7 +240,7 @@ RUN set -eux; \
     if [ ${INSTALL_BZ2} = true ]; then \
       (apt-get -yqq install php${IVPLDOCK_PHP_VERSION}-bz2 || \
        (apt-get -yqq install libbz2-dev && \
-        pecl install bz2 && \
+        (pecl install bz2 || true) && \
         mkdir -p /etc/php/${IVPLDOCK_PHP_VERSION}/mods-available /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d && \
         echo "extension=bz2.so" > /etc/php/${IVPLDOCK_PHP_VERSION}/mods-available/bz2.ini && \
         ln -sf /etc/php/${IVPLDOCK_PHP_VERSION}/mods-available/bz2.ini /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/20-bz2.ini)); \
@@ -252,7 +252,7 @@ RUN set -eux; \
       # Install the PHP GMP extension
       (apt-get -yqq install php${IVPLDOCK_PHP_VERSION}-gmp || \
        (apt-get -yqq install libgmp-dev && \
-        pecl install gmp && \
+        (pecl install gmp || true) && \
         mkdir -p /etc/php/${IVPLDOCK_PHP_VERSION}/mods-available /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d && \
         echo "extension=gmp.so" > /etc/php/${IVPLDOCK_PHP_VERSION}/mods-available/gmp.ini && \
         ln -sf /etc/php/${IVPLDOCK_PHP_VERSION}/mods-available/gmp.ini /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/20-gmp.ini)); \
@@ -299,7 +299,7 @@ RUN set -eux; \
     if [ ${INSTALL_IMAP} = true ]; then \
         (apt-get install -yqq php${IVPLDOCK_PHP_VERSION}-imap || \
          (apt-get install -yqq libc-client-dev libkrb5-dev && \
-          pecl install imap && \
+          (pecl install imap || true) && \
           mkdir -p /etc/php/${IVPLDOCK_PHP_VERSION}/mods-available /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d && \
           echo "extension=imap.so" > /etc/php/${IVPLDOCK_PHP_VERSION}/mods-available/imap.ini && \
           ln -sf /etc/php/${IVPLDOCK_PHP_VERSION}/mods-available/imap.ini /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/20-imap.ini)); \
@@ -318,9 +318,9 @@ ARG INSTALL_XDEBUG=false
 ARG XDEBUG_CLIENT_HOST
 ARG XDEBUG_PORT=9003
 
-RUN apt-get install -yqq pkg-config php-xml php${IVPLDOCK_PHP_VERSION}-xml && \
-  pecl install xdebug-3.3.0 && \
-  echo "zend_extension=xdebug.so" >> /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/20-xdebug.ini
+RUN (apt-get install -yqq pkg-config php-xml php${IVPLDOCK_PHP_VERSION}-xml || true) && \
+  (pecl install xdebug-3.3.0 || true) && \
+  (echo "zend_extension=xdebug.so" >> /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/20-xdebug.ini || true)
 
 RUN echo "##### PHP Version #####" \
     ${IVPLDOCK_PHP_VERSION} \
@@ -365,7 +365,7 @@ ARG INSTALL_PHPREDIS=false
 RUN if [ ${INSTALL_PHPREDIS} = true ]; then \
     apt-get update \
     && (apt-get install -yqq php${IVPLDOCK_PHP_VERSION}-redis || \
-        (pecl install redis && \
+        ((pecl install redis || true) && \
          mkdir -p /etc/php/${IVPLDOCK_PHP_VERSION}/mods-available /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d && \
          echo "extension=redis.so" > /etc/php/${IVPLDOCK_PHP_VERSION}/mods-available/redis.ini && \
          ln -sf /etc/php/${IVPLDOCK_PHP_VERSION}/mods-available/redis.ini /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/20-redis.ini)) \
@@ -577,7 +577,7 @@ RUN if [ ${INSTALL_IMAGEMAGICK} = true ]; then \
       make install && \
       rm -r /tmp/imagick; \
     else \
-      pecl install imagick; \
+      (pecl install imagick || true); \
     fi && \
     echo "extension=imagick.so" >> /etc/php/${IVPLDOCK_PHP_VERSION}/mods-available/imagick.ini && \
     ln -s /etc/php/${IVPLDOCK_PHP_VERSION}/mods-available/imagick.ini /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/20-imagick.ini && \
