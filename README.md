@@ -1,164 +1,547 @@
 # InvoicePlane Docker
 
-Docker-compose with a webserver, MySQL, phpmyadmin and redis
-- docker-compose.yml
-- .env
+> **Complete Docker-based development environment for InvoicePlane**
 
-## Quick Start
+A containerized development stack featuring PHP, Nginx, MariaDB, Redis, and more. Built on Laradock and optimized for InvoicePlane development with support for PHP 7.4 through 8.4.
 
-1. Create your environment file:
+## 🚀 Quick Start
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/InvoicePlane/InvoicePlane-Docker.git
+   cd InvoicePlane-Docker
+   ```
+
+2. **Create your environment file**
    ```bash
    cp .env.example .env.docker
    ```
 
-2. Build and start containers:
+3. **Configure your setup** (optional)
+   ```bash
+   # Edit .env.docker to customize:
+   # - PHP version (8.1, 8.2, 8.3, 8.4)
+   # - Database settings
+   # - Port mappings
+   nano .env.docker
+   ```
+
+4. **Build and start containers**
    ```bash
    ./builddmeup.sh
    ```
 
-## Helper Scripts
+5. **Verify installation**
+   ```bash
+   docker compose --env-file .env.docker ps
+   ```
+
+Your development environment is now ready! 🎉
+
+## 📦 What's Included
+
+### Services
+- **PHP-FPM** - PHP 7.4, 8.0, 8.1, 8.2, 8.3, 8.4 (configurable)
+- **Workspace** - CLI tools, Composer, Node.js, Git
+- **Nginx** - Web server with optimized configuration
+- **MariaDB** - Database server
+- **Redis** - Caching and session storage
+- **Beanstalkd** - Queue management
+- **phpMyAdmin** - Database management interface
+- **Redis Web UI** - Redis monitoring interface
+
+### Features
+- ✅ Multiple PHP versions support
+- ✅ Xdebug with trigger mode
+- ✅ Pre-configured for Laravel and CodeIgniter
+- ✅ Helper scripts for common tasks
+- ✅ GitHub Actions CI/CD
+- ✅ Optimized Docker layer caching
+
+## 🛠️ Helper Scripts
 
 All scripts include error handling and validation to ensure a smooth experience.
 
-### Building
+### 🔨 Building
 
-Build and start containers:
-- `./buildmeup.sh` - Build and start in foreground (with logs)
-- `./builddmeup.sh` - Build and start in background (detached mode)
+**Build and start containers:**
+| Script | Mode | Description |
+|--------|------|-------------|
+| `./buildmeup.sh` | Foreground | Build and start with live logs |
+| `./builddmeup.sh` | Background | Build and start in detached mode |
 
-### Starting/Stopping
+### ▶️ Starting/Stopping
 
-Start existing containers (without rebuilding):
-- `./startmeup.sh` - Start in foreground (with logs)
-- `./startmeup.sh` - Start in background (detached mode)
-- `./down.sh` - Stop and remove all containers and volumes
+**Control existing containers:**
+| Script | Mode | Description |
+|--------|------|-------------|
+| `./startmeup.sh` | Foreground | Start with live logs |
+| `./starmeup.sh` | Background | Start in detached mode |
+| `./down.sh` | - | Stop and remove all containers and volumes |
 
-### Accessing Containers
+### 🖥️ Accessing Containers
 
-Enter a running container:
-- `./workmeup.sh` - Enter workspace as ivpldock user
-- `./rootmeup.sh` - Enter workspace as root
-- `./phpmeup.sh` - Enter php-fpm container
-- `./worker.sh` - Enter php-worker container
+**Enter a running container:**
+| Script | Container | User | Use Case |
+|--------|-----------|------|----------|
+| `./workmeup.sh` | workspace | ivpldock | Development tasks, Composer, NPM |
+| `./rootmeup.sh` | workspace | root | System administration |
+| `./phpmeup.sh` | php-fpm | root | PHP-FPM debugging |
+| `./worker.sh` | php-worker | root | Queue worker debugging |
 
-### Running Commands
+### 🚀 Running Commands
 
-Execute commands inside containers from your host:
+Execute commands inside containers from your host using `docker-exec.sh`:
+
+**Syntax:**
 ```bash
 ./docker-exec.sh <container> <project> <command>
 ```
 
-Examples:
+**Common Examples:**
+
 ```bash
-# Run composer install
+# 📦 Composer Operations
 ./docker-exec.sh workspace myproject "composer install"
+./docker-exec.sh workspace myproject "composer update"
+./docker-exec.sh workspace myproject "composer require vendor/package"
 
-# Run Laravel migrations
+# 🎨 Laravel/Artisan Commands
+./docker-exec.sh php-fpm invoiceplane "php artisan migrate"
 ./docker-exec.sh php-fpm invoiceplane "php artisan migrate --force"
+./docker-exec.sh workspace invoiceplane "php artisan test"
+./docker-exec.sh workspace invoiceplane "php artisan db:seed"
 
-# Run tests
-./docker-exec.sh workspace myproject "php artisan test"
+# 📊 Database Operations
+./docker-exec.sh workspace invoiceplane "php artisan migrate:fresh --seed"
+./docker-exec.sh workspace invoiceplane "php artisan migrate:rollback"
 
-# Build assets
+# 🔧 NPM Operations
+./docker-exec.sh workspace myapp "npm install"
 ./docker-exec.sh workspace myapp "npm run build"
+./docker-exec.sh workspace myapp "npm run dev"
+./docker-exec.sh workspace myapp "npm run watch"
+
+# 🧪 Testing
+./docker-exec.sh workspace myproject "php artisan test"
+./docker-exec.sh workspace myproject "vendor/bin/phpunit"
+./docker-exec.sh workspace myproject "php artisan test --filter UserTest"
 ```
 
-## Continuous Integration
+## 🔄 Continuous Integration
 
-This repository includes GitHub Actions workflows that automatically test Docker builds for:
-- PHP 8.2
-- PHP 8.3
-- PHP 8.4
+This repository includes automated GitHub Actions workflows that test Docker builds.
 
-The CI pipeline verifies:
-- All containers build successfully
-- PHP extensions (including zip) are properly installed
-- Services start correctly
+**Tested PHP Versions:**
+- ✅ PHP 8.2
+- ✅ PHP 8.3
+- ✅ PHP 8.4
 
-## Directories
+**CI Pipeline Verifies:**
+- ✅ All containers build successfully
+- ✅ PHP extensions are properly installed (zip, etc.)
+- ✅ Services start correctly
+- ✅ Basic functionality works
 
-| Directory	|      Purpose   																											|
-|----------	|:--------------------------------------------------------------:			|
-| ./.docker 	|  For all the DockerFiles 	|																																				|
-| ./sites 	|  For all the sites (for the nginx webserver)												|
-| ./.github/workflows | GitHub Actions CI/CD pipelines |
+**Workflow Triggers:**
+- Push to main branches
+- Pull requests
+- Manual dispatch
 
-## Configuration
+## 📁 Directory Structure
 
-Edit `.env.docker` to customize:
-- PHP version (8.1, 8.2, 8.3, 8.4)
-- Database settings
-- Port mappings
-- Service options
+| Directory | Purpose |
+|-----------|---------|
+| `.docker/` | All Dockerfile definitions for services |
+| `sites/` | Nginx site configurations |
+| `.github/workflows/` | GitHub Actions CI/CD pipelines |
+| `*.sh` | Helper scripts for common operations |
 
-### Docker Build Caching
+## ⚙️ Configuration
 
-Docker automatically caches build layers to speed up subsequent builds. When you build a service like `beanstalkd`, Docker Compose will:
+### Basic Setup
 
-1. Check if dependent services (php-fpm, workspace) need to be built
-2. Use cached layers if the Dockerfile and context haven't changed
-3. Only rebuild layers that have changed
+Edit `.env.docker` to customize your environment:
 
-**Tips for better caching:**
-- Docker keeps built images in cache even if you stop containers
-- Rebuilds are only needed when Dockerfiles or build args change
-- Use `--no-cache` flag only when you need to force a complete rebuild:
-  ```bash
-  docker compose --env-file .env.docker build --no-cache php-fpm
-  ```
+**Core Settings:**
+```bash
+# PHP Version
+PHP_VERSION=8.1  # Options: 7.4, 8.0, 8.1, 8.2, 8.3, 8.4
 
-**Example**: If you've just built `php-fpm`, then building `beanstalkd` will use the cached `php-fpm` image instead of rebuilding it.
+# Project Path
+APP_CODE_PATH_HOST=../projects/
 
-### Xdebug Configuration
+# Database
+MARIADB_VERSION=latest
+MARIADB_DATABASE=default
+MARIADB_USER=default
+MARIADB_PASSWORD=secret
 
-Xdebug is configured in trigger mode to prevent connection warnings during builds. To use Xdebug for debugging:
+# Ports
+NGINX_HOST_HTTP_PORT=80
+MARIADB_PORT=3306
+REDIS_PORT=6379
+```
 
-1. **Enable Xdebug in your IDE** (PHPStorm, VS Code, etc.)
+### 🐳 Docker Build Caching
 
-2. **Trigger Xdebug** using one of these methods:
-   - Environment variable: `export XDEBUG_TRIGGER=1`
-   - Query parameter in URL: `?XDEBUG_TRIGGER=1`
-   - Browser extension: Install Xdebug Helper and set a cookie
-   - IDE: Configure your IDE to send the trigger
+Docker automatically caches build layers to speed up subsequent builds.
 
-3. **For CLI debugging** (e.g., running tests):
-   ```bash
-   # Inside the workspace container
-   XDEBUG_TRIGGER=1 php artisan test
-   
-   # Or using docker-exec.sh
-   ./docker-exec.sh workspace myproject "XDEBUG_TRIGGER=1 php artisan test"
+**How It Works:**
+1. Docker Compose checks if dependent services need building
+2. Uses cached layers if Dockerfile and context haven't changed
+3. Only rebuilds layers that have changed
+
+**Benefits:**
+- ⚡ Faster rebuild times
+- 💾 Efficient resource usage
+- 🔄 Smart dependency management
+
+**Tips for Better Caching:**
+```bash
+# Docker keeps built images in cache even after stopping containers
+docker compose --env-file .env.docker ps
+
+# Force complete rebuild only when necessary
+docker compose --env-file .env.docker build --no-cache php-fpm
+
+# Build specific service
+docker compose --env-file .env.docker build workspace
+
+# Parallel builds for multiple services
+docker compose --env-file .env.docker build --parallel
+```
+
+**Example Workflow:**
+```bash
+# First build (takes longer)
+docker compose --env-file .env.docker build php-fpm
+# ⏱️ 5 minutes
+
+# Build dependent service (uses cache)
+docker compose --env-file .env.docker build beanstalkd
+# ⏱️ 30 seconds (php-fpm cached!)
+```
+
+### 🐛 Xdebug Configuration
+
+Xdebug is configured in **trigger mode** to prevent connection warnings during builds while maintaining full debugging capability.
+
+#### Activation Methods
+
+**1️⃣ Browser Debugging (Web Requests)**
+
+Using Browser Extension:
+- Install [Xdebug Helper](https://chrome.google.com/webstore/detail/xdebug-helper/eadndfjplgieldjbigjakmdgkmoaaaoc) for Chrome
+- Or [Xdebug Helper](https://addons.mozilla.org/en-US/firefox/addon/xdebug-helper-for-firefox/) for Firefox
+- Click the extension icon to enable debugging
+
+Using Query Parameter:
+```
+http://your-app.local?XDEBUG_TRIGGER=1
+```
+
+Using Cookie:
+```javascript
+document.cookie = "XDEBUG_TRIGGER=1; path=/";
+```
+
+**2️⃣ CLI Debugging (Command Line)**
+
+Inside Container:
+```bash
+# Enter workspace
+./workmeup.sh
+
+# Run with Xdebug
+XDEBUG_TRIGGER=1 php artisan test
+XDEBUG_TRIGGER=1 php script.php
+XDEBUG_TRIGGER=1 vendor/bin/phpunit
+```
+
+From Host:
+```bash
+# Single command with Xdebug
+./docker-exec.sh workspace myproject "XDEBUG_TRIGGER=1 php artisan test"
+
+# Composer with Xdebug
+./docker-exec.sh workspace myproject "XDEBUG_TRIGGER=1 composer install"
+```
+
+**3️⃣ Persistent Debugging (Environment Variable)**
+
+```bash
+# Inside container
+export XDEBUG_TRIGGER=1
+php artisan test  # Now always uses Xdebug
+```
+
+#### IDE Configuration
+
+**PHPStorm Setup:**
+1. Go to `Settings → PHP → Debug`
+2. Set port to `9003`
+3. Go to `Settings → PHP → Servers`
+4. Add server named `ivpldock`
+5. Set path mappings:
+   - Local: `/path/to/your/project`
+   - Remote: `/var/www/projects/yourproject`
+6. Click "Start Listening for PHP Debug Connections" (phone icon)
+
+**VS Code Setup:**
+1. Install [PHP Debug extension](https://marketplace.visualstudio.com/items?itemName=xdebug.php-debug)
+2. Create `.vscode/launch.json`:
+   ```json
+   {
+     "version": "0.2.0",
+     "configurations": [
+       {
+         "name": "Listen for Xdebug",
+         "type": "php",
+         "request": "launch",
+         "port": 9003,
+         "pathMappings": {
+           "/var/www/projects/yourproject": "${workspaceFolder}"
+         }
+       }
+     ]
+   }
    ```
+3. Press F5 to start debugging
 
-4. **Xdebug port**: Default is `9003` (configurable in `.env.docker`)
+#### Configuration Files
 
-The Xdebug configuration files are located at:
-- php-fpm: `.docker/php-fpm/xdebug.ini`
-- workspace: `.docker/workspace/xdebug.ini`
+```bash
+# Xdebug settings locations
+.docker/php-fpm/xdebug.ini       # PHP-FPM container
+.docker/workspace/xdebug.ini     # Workspace container
+```
 
-## Troubleshooting
+**Default Port:** 9003 (configurable in `.env.docker`)
 
-### Container not starting?
-Check if the .env.docker file exists:
+#### Troubleshooting Xdebug
+
+```bash
+# Verify Xdebug is installed
+docker compose --env-file .env.docker exec workspace php -v
+# Should show: "with Xdebug v3.x.x"
+
+# Check Xdebug configuration
+docker compose --env-file .env.docker exec workspace php -i | grep xdebug
+
+# Test Xdebug trigger
+docker compose --env-file .env.docker exec workspace bash -c "XDEBUG_TRIGGER=1 php -v"
+
+# View Xdebug logs
+docker compose --env-file .env.docker exec workspace cat /tmp/xdebug.log
+```
+
+## 🔧 Troubleshooting
+
+### Common Issues
+
+#### ❌ Container Won't Start
+
+**Check environment file exists:**
 ```bash
 ls -la .env.docker
 ```
 
-### Want to see running containers?
-```bash
-docker compose --env-file .env.docker ps
-```
-
-### View container logs?
+**View detailed logs:**
 ```bash
 docker compose --env-file .env.docker logs -f <container_name>
+# Examples:
+docker compose --env-file .env.docker logs -f workspace
+docker compose --env-file .env.docker logs -f php-fpm
 ```
 
-> **Note**: The helper scripts use `docker-compose` for backward compatibility, but `docker compose` (v2) is recommended for manual commands.
+**Check container status:**
+```bash
+docker compose --env-file .env.docker ps
+docker compose --env-file .env.docker ps -a  # Include stopped containers
+```
 
-## Origins
+#### 🔌 Port Already in Use
 
-This script was originally called Laradock. We've forked it to target just the specific images that are needed to run InvoicePlane.
+**Check what's using the port:**
+```bash
+# Linux/Mac
+sudo lsof -i :80
+sudo lsof -i :3306
 
-Link to Laradock: [laradock](https://github.com/laradock/laradock/)
-We've included their license file in this repository.
+# Or use netstat
+netstat -tlnp | grep :80
+```
+
+**Solution: Change port in `.env.docker`:**
+```bash
+NGINX_HOST_HTTP_PORT=8080  # Instead of 80
+MARIADB_PORT=3307          # Instead of 3306
+```
+
+#### 🔐 Permission Denied Errors
+
+**Check and fix PUID/PGID:**
+```bash
+# Get your user and group ID
+id -u  # Your user ID
+id -g  # Your group ID
+
+# Update .env.docker
+WORKSPACE_PUID=1000  # Your user ID
+WORKSPACE_PGID=1000  # Your group ID
+PHP_FPM_PUID=1000
+PHP_FPM_PGID=1000
+
+# Rebuild containers
+docker compose --env-file .env.docker build workspace php-fpm
+docker compose --env-file .env.docker up -d
+```
+
+#### 🐌 Slow Performance (macOS/Windows)
+
+**Use cached volume flag:**
+```bash
+# In .env.docker
+APP_CODE_CONTAINER_FLAG=:cached
+```
+
+**Consider Docker Sync for large projects:**
+- Significant performance improvement
+- See [docker-sync documentation](https://docker-sync.readthedocs.io/)
+
+#### 🗄️ Database Connection Failed
+
+**Verify database is running:**
+```bash
+docker compose --env-file .env.docker ps mariadb
+```
+
+**Check database credentials:**
+```bash
+# In .env.docker
+MARIADB_DATABASE=default
+MARIADB_USER=default
+MARIADB_PASSWORD=secret
+
+# In your app's .env
+DB_HOST=mariadb  # Not localhost!
+DB_PORT=3306
+DB_DATABASE=default
+DB_USERNAME=default
+DB_PASSWORD=secret
+```
+
+**Test connection:**
+```bash
+docker compose --env-file .env.docker exec workspace mysql -h mariadb -u default -psecret
+```
+
+#### 🧹 Clean Up Issues
+
+**Remove all containers and volumes:**
+```bash
+# WARNING: This deletes all data!
+docker compose --env-file .env.docker down -v
+```
+
+**Full Docker cleanup:**
+```bash
+# Remove unused containers, networks, images
+docker system prune -a
+
+# Remove all volumes (BE CAREFUL!)
+docker volume prune
+```
+
+#### 📦 Build Failures
+
+**Clear build cache and rebuild:**
+```bash
+docker compose --env-file .env.docker build --no-cache --pull <service>
+```
+
+**Check Docker disk space:**
+```bash
+docker system df
+```
+
+### Getting Help
+
+**Collect diagnostic information:**
+```bash
+# Docker version
+docker --version
+docker compose version
+
+# Container status
+docker compose --env-file .env.docker ps
+
+# Recent logs
+docker compose --env-file .env.docker logs --tail=50 workspace php-fpm
+
+# System info
+docker info
+```
+
+**When reporting issues, include:**
+1. Steps to reproduce
+2. Error messages (full output)
+3. Docker and compose versions
+4. Operating system
+5. Relevant configuration from `.env.docker`
+
+## 📚 Additional Resources
+
+### Documentation
+- **Project Guidelines**: [.junie/guidelines.md](.junie/guidelines.md) - Comprehensive development guidelines
+- **Copilot Instructions**: [.github/copilot-instructions.md](.github/copilot-instructions.md) - AI coding assistant guidelines
+- **Docker Compatibility**: [DOCKER_COMPATIBILITY.md](DOCKER_COMPATIBILITY.md) - Version compatibility matrix
+
+### External Links
+- **Laradock**: Original upstream project - [github.com/laradock/laradock](https://github.com/laradock/laradock)
+- **InvoicePlane**: Main application - [github.com/InvoicePlane/InvoicePlane](https://github.com/InvoicePlane/InvoicePlane)
+- **Docker Documentation**: [docs.docker.com](https://docs.docker.com)
+- **Docker Compose Documentation**: [docs.docker.com/compose](https://docs.docker.com/compose)
+
+### Community & Support
+- **Issues**: [GitHub Issues](https://github.com/InvoicePlane/InvoicePlane-Docker/issues) - Report bugs and request features
+- **Discussions**: [GitHub Discussions](https://github.com/InvoicePlane/InvoicePlane-Docker/discussions) - Ask questions and share ideas
+- **Pull Requests**: [Contributing Guidelines](.junie/guidelines.md#contributing) - Submit code improvements
+
+## 🤝 Contributing
+
+We welcome contributions! Please see our [development guidelines](.junie/guidelines.md) for:
+- Code standards
+- Testing requirements
+- Pull request process
+- Docker best practices
+
+### Quick Contribution Guide
+
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature/amazing-feature`
+3. Make your changes
+4. Test thoroughly across PHP versions
+5. Commit your changes: `git commit -m 'Add amazing feature'`
+6. Push to branch: `git push origin feature/amazing-feature`
+7. Open a Pull Request
+
+## 📝 License
+
+This project inherits its license from Laradock. See [LICENSE](LICENSE) for details.
+
+## 🙏 Origins & Credits
+
+This project was originally called **Laradock** and has been forked to target specifically the images needed to run InvoicePlane.
+
+- **Laradock**: [github.com/laradock/laradock](https://github.com/laradock/laradock/)
+- **License**: Original license file included in this repository
+
+---
+
+**Version**: 2.0  
+**Last Updated**: 2026-01-05  
+**Maintained by**: [InvoicePlane Team](https://github.com/InvoicePlane)
+
+> **Note**: Helper scripts use `docker-compose` for backward compatibility, but `docker compose` (v2) is recommended for manual commands.
