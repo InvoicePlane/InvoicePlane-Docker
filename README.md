@@ -103,6 +103,8 @@ Now we'll tell Nginx how to serve your InvoicePlane project:
 
 4. **Save and close the file** (in nano: press `Ctrl+X`, then `Y`, then `Enter`)
 
+### Step 4: Add Domain to Your Hosts File
+
 Tell your computer that `ivplv1.test` should point to your local Docker environment:
 
 **On Linux/Mac:**
