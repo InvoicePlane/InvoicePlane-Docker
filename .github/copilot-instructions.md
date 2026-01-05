@@ -322,5 +322,5 @@ When using GitHub Copilot or similar tools:
 
 ---
 
-**Last Updated**: 2026-01-05  
+**Last Updated**: 2025-01-05  
 **Maintainer**: InvoicePlane Team
