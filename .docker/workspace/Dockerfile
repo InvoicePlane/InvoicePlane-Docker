@@ -53,10 +53,12 @@ ENV DEBIAN_FRONTEND=noninteractive \
 RUN set -xe; \
     apt-get update -yqq && \
     (pecl channel-update pecl.php.net || true) && \
-    (groupadd -g ${PGID} ivpldock || groupadd ivpldock) && \
+    # Rename existing ubuntu user/group to ivpldock if they exist
+    (groupmod -n ivpldock ubuntu || groupadd -g ${PGID} ivpldock || groupadd ivpldock) && \
     (groupadd docker_env || true) && \
-    useradd -l -u ${PUID} -g ivpldock -m ivpldock -G docker_env && \
+    (usermod -l ivpldock -d /home/ivpldock -m ubuntu || useradd -l -u ${PUID} -g ivpldock -m ivpldock -G docker_env) && \
     usermod -p "*" ivpldock -s /bin/bash && \
+    (usermod -aG docker_env ivpldock || true) && \
     apt-get install -yqq \
       apt-utils \
       #
@@ -71,8 +73,6 @@ RUN set -xe; \
       #
       # next lines are here because there is no auto build on dockerhub see https://github.com/ivpldock/ivpldock/pull/1903#issuecomment-463142846
       libzip-dev zip unzip \
-      # Install the zip extension
-      php${IVPLDOCK_PHP_VERSION}-zip \
       # nasm
       nasm && \
       php -m | grep -q 'zip'
