@@ -91,6 +91,33 @@ Edit `.env.docker` to customize:
 - Port mappings
 - Service options
 
+### Xdebug Configuration
+
+Xdebug is configured in trigger mode to prevent connection warnings during builds. To use Xdebug for debugging:
+
+1. **Enable Xdebug in your IDE** (PHPStorm, VS Code, etc.)
+
+2. **Trigger Xdebug** using one of these methods:
+   - Environment variable: `export XDEBUG_TRIGGER=1`
+   - Query parameter in URL: `?XDEBUG_TRIGGER=1`
+   - Browser extension: Install Xdebug Helper and set a cookie
+   - IDE: Configure your IDE to send the trigger
+
+3. **For CLI debugging** (e.g., running tests):
+   ```bash
+   # Inside the workspace container
+   XDEBUG_TRIGGER=1 php artisan test
+   
+   # Or using docker-exec.sh
+   ./docker-exec.sh workspace myproject "XDEBUG_TRIGGER=1 php artisan test"
+   ```
+
+4. **Xdebug port**: Default is `9003` (configurable in `.env.docker`)
+
+The Xdebug configuration files are located at:
+- php-fpm: `.docker/php-fpm/xdebug.ini`
+- workspace: `.docker/workspace/xdebug.ini`
+
 ## Troubleshooting
 
 ### Container not starting?
