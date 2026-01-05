@@ -42,6 +42,7 @@ jobs:
           cp .env.example .env.docker
           sed -i "s/PHP_VERSION=8.1/PHP_VERSION=${{ matrix.php-version }}/" .env.docker
           sed -i "s/WORKSPACE_INSTALL_PYTHON3=true/WORKSPACE_INSTALL_PYTHON3=false/" .env.docker
+          sed -i "s/WORKSPACE_INSTALL_WKHTMLTOPDF=true/WORKSPACE_INSTALL_WKHTMLTOPDF=false/" .env.docker
 
       - name: Build workspace container
         run: docker compose --env-file .env.docker build workspace
