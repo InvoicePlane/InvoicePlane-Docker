@@ -91,27 +91,17 @@ Now we'll tell Nginx how to serve your InvoicePlane project:
    nano sites/ivplv1.conf
    ```
 
-3. **Replace all instances of `copyme` with `ivplv1`** (there are 4 places):
+3. **Replace all instances of `copyme` with `ivplv1`** and **remove `/public` from the root path** (there are 4 places to change):
    - Line 5: `server_name copyme.local;` → `server_name ivplv1.test;`
-   - Line 6: `root /var/www/projects/copyme/public;` → `root /var/www/projects/ivplv1;`
+   - Line 6: `root /var/www/projects/copyme/public;` → `root /var/www/projects/ivplv1;` *(also remove /public)*
    - Line 34: `error_log /var/log/nginx/copyme_error.log;` → `error_log /var/log/nginx/ivplv1_error.log;`
    - Line 35: `access_log /var/log/nginx/copyme_access.log;` → `access_log /var/log/nginx/ivplv1_access.log;`
 
-4. **Remove `/public` from the root path** because InvoicePlane v1 doesn't use a public directory:
+   > 💡 **Why remove `/public`?** InvoicePlane v1 doesn't use a public directory like some frameworks. The main files are in the root of the project.
    
-   Change this:
-   ```nginx
-   root /var/www/projects/ivplv1/public;
-   ```
-   
-   To this:
-   ```nginx
-   root /var/www/projects/ivplv1;
-   ```
+   > 💡 **Why use `.test` instead of `.local`?** The `.test` domain is reserved for testing and won't conflict with real domains. You can use `.local` if you prefer, just be consistent.
 
-5. **Save and close the file** (in nano: press `Ctrl+X`, then `Y`, then `Enter`)
-
-### Step 4: Add Domain to Your Hosts File
+4. **Save and close the file** (in nano: press `Ctrl+X`, then `Y`, then `Enter`)
 
 Tell your computer that `ivplv1.test` should point to your local Docker environment:
 
@@ -215,7 +205,12 @@ This is much faster than the first build! ⚡
   ```bash
   NGINX_HOST_HTTP_PORT=8080
   ```
-  Then access your site at `http://ivplv1.test:8080`
+  Then **restart Docker** for the change to take effect:
+  ```bash
+  ./down.sh
+  ./starmeup.sh
+  ```
+  Access your site at `http://ivplv1.test:8080`
 
 **Problem**: "Permission denied" errors
 - **Solution**: Check your `PUID` and `PGID` in `.env.docker` match your user:
