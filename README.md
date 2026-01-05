@@ -38,6 +38,199 @@ A containerized development stack featuring PHP, Nginx, MariaDB, Redis, and more
 
 Your development environment is now ready! 🎉
 
+## 📖 Setting Up Your First Project (InvoicePlane)
+
+This guide will walk you through setting up InvoicePlane v1 step by step.
+
+### Step 1: Prepare Your Project Directory
+
+First, make sure your projects directory exists. By default, this is `~/projects`:
+
+```bash
+# Create the projects directory if it doesn't exist
+mkdir -p ~/projects
+
+# Clone InvoicePlane v1 into your projects directory
+cd ~/projects
+git clone https://github.com/InvoicePlane/InvoicePlane.git ivplv1
+cd ivplv1
+```
+
+> 💡 **Note**: The folder name `ivplv1` will be used in the next steps. You can choose any name you like, but remember to use it consistently.
+
+### Step 2: Configure Your Environment
+
+Open your `.env.docker` file in the InvoicePlane-Docker directory:
+
+```bash
+cd /path/to/InvoicePlane-Docker
+nano .env.docker
+```
+
+Find the line that says `APP_CODE_PATH_HOST` and make sure it points to your projects directory:
+
+```bash
+# This should match where you created your projects folder
+APP_CODE_PATH_HOST=~/projects/
+```
+
+> 💡 **Tip**: If you used a different path for your projects, update this line accordingly. For example, if your projects are in `/home/username/myprojects/`, use that path instead.
+
+### Step 3: Create Your Nginx Configuration
+
+Now we'll tell Nginx how to serve your InvoicePlane project:
+
+1. **Copy the example configuration:**
+   ```bash
+   cd /path/to/InvoicePlane-Docker
+   cp sites/copyme.conf.example sites/ivplv1.conf
+   ```
+
+2. **Open the configuration file:**
+   ```bash
+   nano sites/ivplv1.conf
+   ```
+
+3. **Replace all instances of `copyme` with `ivplv1`** (there are 4 places):
+   - Line 5: `server_name copyme.local;` → `server_name ivplv1.test;`
+   - Line 6: `root /var/www/projects/copyme/public;` → `root /var/www/projects/ivplv1;`
+   - Line 34: `error_log /var/log/nginx/copyme_error.log;` → `error_log /var/log/nginx/ivplv1_error.log;`
+   - Line 35: `access_log /var/log/nginx/copyme_access.log;` → `access_log /var/log/nginx/ivplv1_access.log;`
+
+4. **Remove `/public` from the root path** because InvoicePlane v1 doesn't use a public directory:
+   
+   Change this:
+   ```nginx
+   root /var/www/projects/ivplv1/public;
+   ```
+   
+   To this:
+   ```nginx
+   root /var/www/projects/ivplv1;
+   ```
+
+5. **Save and close the file** (in nano: press `Ctrl+X`, then `Y`, then `Enter`)
+
+### Step 4: Add Domain to Your Hosts File
+
+Tell your computer that `ivplv1.test` should point to your local Docker environment:
+
+**On Linux/Mac:**
+```bash
+sudo nano /etc/hosts
+```
+
+**On Windows:**
+Open Notepad as Administrator, then open:
+```
+C:\Windows\System32\drivers\etc\hosts
+```
+
+Add this line:
+```
+127.0.0.1    ivplv1.test
+```
+
+Save and close the file.
+
+### Step 5: Start Docker
+
+Now start your Docker environment:
+
+```bash
+cd /path/to/InvoicePlane-Docker
+./starmeup.sh
+```
+
+> 💡 **What's happening?** Docker is:
+> - Building the containers (first time takes 5-10 minutes)
+> - Starting PHP, Nginx, MariaDB, and other services
+> - Reading your `ivplv1.conf` file to know how to serve your project
+> - Making your project available at `http://ivplv1.test`
+
+You'll see lots of output in your terminal. This is normal! Look for messages saying containers are starting.
+
+### Step 6: Verify Everything is Running
+
+In a new terminal window (keep Docker running in the first one):
+
+```bash
+cd /path/to/InvoicePlane-Docker
+docker compose --env-file .env.docker ps
+```
+
+You should see all services with "Up" status:
+```
+NAME                STATUS
+workspace           Up
+php-fpm             Up
+nginx               Up
+mariadb             Up
+redis               Up
+```
+
+### Step 7: Access Your Project
+
+Open your web browser and go to:
+```
+http://ivplv1.test
+```
+
+You should see your InvoicePlane installation! 🎉
+
+### Step 8: Stop Docker When Done
+
+When you're finished working, stop Docker:
+
+**Option 1: Stop from terminal** (if Docker is running in foreground)
+- Press `Ctrl+C` in the terminal where Docker is running
+
+**Option 2: Stop and remove everything**
+```bash
+./down.sh
+```
+
+This stops all containers and removes them (but keeps your code safe).
+
+### Step 9: Restart Docker Later
+
+When you want to work again, just run:
+```bash
+./starmeup.sh
+```
+
+This is much faster than the first build! ⚡
+
+---
+
+### 🆘 Troubleshooting
+
+**Problem**: Can't access `http://ivplv1.test`
+- **Solution**: Make sure you added `127.0.0.1 ivplv1.test` to your hosts file
+- **Solution**: Make sure Docker is running (`docker compose ps`)
+- **Solution**: Try `http://localhost` instead
+
+**Problem**: "Port already in use"
+- **Solution**: Another service is using port 80. Either stop it, or change the port in `.env.docker`:
+  ```bash
+  NGINX_HOST_HTTP_PORT=8080
+  ```
+  Then access your site at `http://ivplv1.test:8080`
+
+**Problem**: "Permission denied" errors
+- **Solution**: Check your `PUID` and `PGID` in `.env.docker` match your user:
+  ```bash
+  id -u  # This is your PUID
+  id -g  # This is your PGID
+  ```
+
+**Problem**: Changes to nginx config not working
+- **Solution**: Restart Docker to reload the configuration:
+  ```bash
+  ./down.sh
+  ./starmeup.sh
+  ```
+
 ## 📦 What's Included
 
 ### Services

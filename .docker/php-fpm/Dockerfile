@@ -242,7 +242,7 @@ RUN if [ ${INSTALL_XDEBUG} = true ]; then \
 COPY php-fpm/xdebug.ini /usr/local/etc/php/conf.d/xdebug.ini
 
 # Configure Xdebug settings based on PHP version
-# For Xdebug 3 (PHP 7.3+, 7.4, 8.x): Use trigger mode to prevent connection warnings during build
+# For Xdebug 3 (PHP 7.3, 7.4, 8.x): Use trigger mode to prevent connection warnings during build
 # For Xdebug 2 (older PHP): Keep autostart disabled to prevent connection warnings during build
 RUN if [ $(php -r "echo PHP_MAJOR_VERSION;") = "8" ] || { [ $(php -r "echo PHP_MAJOR_VERSION;") = "7" ] && { [ $(php -r "echo PHP_MINOR_VERSION;") = "4" ] || [ $(php -r "echo PHP_MINOR_VERSION;") = "3" ] ;} ;}; then \
   sed -i "s/xdebug.remote_host=/xdebug.client_host=/" /usr/local/etc/php/conf.d/xdebug.ini && \
