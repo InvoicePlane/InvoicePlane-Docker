@@ -361,12 +361,12 @@ RUN if [ ${INSTALL_XDEBUG} = true ]; then \
 COPY ./xdebug.ini /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/xdebug.ini
 
 # Configure Xdebug settings based on PHP version
-# For Xdebug 3 (PHP 7.3+, 7.4, 8.x): Use trigger mode to prevent connection warnings during build
+# For Xdebug 3 (PHP 7.3, 7.4, 8.x): Use trigger mode to prevent connection warnings during build
 # For Xdebug 2 (older PHP): Keep autostart disabled to prevent connection warnings during build
 RUN if [ $(php -r "echo PHP_MAJOR_VERSION;") = "8" ] || { [ $(php -r "echo PHP_MAJOR_VERSION;") = "7" ] && { [ $(php -r "echo PHP_MINOR_VERSION;") = "4" ] || [ $(php -r "echo PHP_MINOR_VERSION;") = "3" ] ;} ;}; then \
   sed -i "s/xdebug.remote_host=/xdebug.client_host=/" /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/xdebug.ini && \
   sed -i "s/xdebug.remote_connect_back=0/xdebug.discover_client_host=false/" /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/xdebug.ini && \
-  sed -i "s/xdebug.remote_port=9000/xdebug.client_port=${XDEBUG_PORT}/" /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/xdebug.ini && \
+  sed -i "s/xdebug\.\(remote_port\|client_port\)=[0-9]*/xdebug.client_port=${XDEBUG_PORT}/" /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/xdebug.ini && \
   sed -i "s/xdebug.profiler_enable=0/; xdebug.profiler_enable=0/" /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/xdebug.ini && \
   sed -i "s/xdebug.profiler_output_dir=/xdebug.output_dir=/" /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/xdebug.ini && \
   sed -i "s/xdebug.remote_mode=req/; xdebug.remote_mode=req/" /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/xdebug.ini && \
