@@ -336,10 +336,10 @@ RUN if [ $(php -r "echo PHP_MAJOR_VERSION;") = "8" ] || { [ $(php -r "echo PHP_M
   sed -i "s/xdebug.profiler_enable=0/; xdebug.profiler_enable=0/" /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/xdebug.ini && \
   sed -i "s/xdebug.profiler_output_dir=/xdebug.output_dir=/" /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/xdebug.ini && \
   sed -i "s/xdebug.remote_mode=req/; xdebug.remote_mode=req/" /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/xdebug.ini && \
-  sed -i "s/xdebug.remote_autostart=0/xdebug.start_with_request=yes/" /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/xdebug.ini && \
+  sed -i "s/xdebug.remote_autostart=0/xdebug.start_with_request=trigger/" /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/xdebug.ini && \
   sed -i "s/xdebug.remote_enable=0/xdebug.mode=debug/" /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/xdebug.ini \
 ;else \
-  sed -i "s/xdebug.remote_autostart=0/xdebug.remote_autostart=1/" /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/xdebug.ini && \
+  sed -i "s/xdebug.remote_autostart=0/xdebug.remote_autostart=0/" /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/xdebug.ini && \
   sed -i "s/xdebug.remote_enable=0/xdebug.remote_enable=1/" /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/xdebug.ini \
 ;fi
 RUN sed -i "s/xdebug.cli_color=0/xdebug.cli_color=1/" /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/xdebug.ini
