@@ -84,7 +84,7 @@ RUN set -eux; \
       ./configure; \
       make && make install; \
     else \
-      pecl install gnupg; \
+      (pecl install gnupg || true); \
     fi; \
     docker-php-ext-enable gnupg; \
     php -m | grep -oiE '^gnupg$'; \
@@ -131,7 +131,7 @@ RUN set -eux; \
   make install && \
   rm -r /tmp/imagick; \
   else \
-  pecl install imagick; \
+  (pecl install imagick || true); \
   fi && \
   docker-php-ext-enable imagick; \
   php -m | grep -q 'imagick'; \
@@ -160,18 +160,18 @@ RUN if [ ${INSTALL_SOAP} = true ]; then \
 ARG INSTALL_MONGO=false
 RUN if [ ${INSTALL_MONGO} = true ]; then \
     if [ $(php -r "echo PHP_MAJOR_VERSION;") = "5" ]; then \
-      pecl install mongo; \
+      (pecl install mongo || true); \
       docker-php-ext-enable mongo; \
       php -m | grep -oiE '^mongo$'; \
     else \
       if [ $(php -r "echo PHP_MAJOR_VERSION;") = "7" ] && [ $(php -r "echo PHP_MINOR_VERSION;") != "4" ]; then \
         if [ $(php -r "echo PHP_MINOR_VERSION;") = "0" ] || [ $(php -r "echo PHP_MINOR_VERSION;") = "1" ]; then \
-          pecl install mongodb-1.9.2; \
+          (pecl install mongodb-1.9.2 || true); \
         else \
-          pecl install mongodb-1.16.2; \
+          (pecl install mongodb-1.16.2 || true); \
         fi; \
       else \
-        pecl install mongodb; \
+        (pecl install mongodb || true); \
       fi; \
       docker-php-ext-enable mongodb; \
       php -m | grep -oiE '^mongodb$'; \
@@ -204,7 +204,7 @@ RUN if [ ${INSTALL_OCI8} = true ] && [ $(php -r "echo PHP_MAJOR_VERSION;") = "7"
   ln -s ${ORACLE_HOME}/sqlplus /usr/bin/sqlplus &&\
   ln -s /usr/lib/libnsl.so.2.0.0  /usr/lib/libnsl.so.1 && \
   ## Build OCI8 with PECL
-  echo "instantclient,${ORACLE_HOME}" | pecl install oci8 && \
+  (echo "instantclient,${ORACLE_HOME}" | pecl install oci8 || true) && \
   echo 'extension=oci8.so' > /etc/php7/conf.d/30-oci8.ini \
   #  Clean up
   apk del php7-pear php7-dev gcc musl-dev && \
@@ -300,9 +300,9 @@ RUN if [ ${INSTALL_AMQP} = true ]; then \
     || [ ${IVPLDOCK_PHP_VERSION} = "7.1" ] \
     || [ ${IVPLDOCK_PHP_VERSION} = "7.0" ] \
     || [ ${IVPLDOCK_PHP_VERSION} = "5.6" ]; then \
-    printf "\n" | pecl install amqp-1.11.0; \
+    (printf "\n" | pecl install amqp-1.11.0 || true); \
   else \
-    printf "\n" | pecl install amqp; \
+    (printf "\n" | pecl install amqp || true); \
   fi && \
     docker-php-ext-enable amqp && \
     apk del -q rabbitmq-c-dev; \
@@ -362,9 +362,9 @@ ARG INSTALL_APCU=false
 
 RUN if [ ${INSTALL_APCU} = true ]; then \
     if [ $(php -r "echo PHP_MAJOR_VERSION;") = "5" ]; then \
-        pecl install -a apcu-4.0.11; \
+        (pecl install -a apcu-4.0.11 || true); \
     else \
-        pecl install apcu; \
+        (pecl install apcu || true); \
     fi && \
     docker-php-ext-enable apcu \
 ;fi
@@ -379,9 +379,9 @@ ARG INSTALL_REDIS=false
 RUN if [ ${INSTALL_REDIS} = true ]; then \
   # Install Redis Extension
   if [ $(php -r "echo PHP_MAJOR_VERSION;") = "5" ]; then \
-  printf "\n" | pecl install -o -f redis-4.3.0; \
+  (printf "\n" | pecl install -o -f redis-4.3.0 || true); \
   else \
-  printf "\n" | pecl install -o -f redis; \
+  (printf "\n" | pecl install -o -f redis || true); \
   fi; \
   rm -rf /tmp/pear; \
   docker-php-ext-enable redis \
@@ -397,15 +397,15 @@ RUN set -eux; \
   if [ ${INSTALL_SWOOLE} = true ]; then \
     # Install Php Swoole Extension
     if   [ $(php -r "echo PHP_VERSION_ID - PHP_RELEASE_VERSION;") = "50600" ]; then \
-      pecl install swoole-2.0.10; \
+      (pecl install swoole-2.0.10 || true); \
     elif [ $(php -r "echo PHP_VERSION_ID - PHP_RELEASE_VERSION;") = "70000" ]; then \
-      pecl install swoole-4.3.5; \
+      (pecl install swoole-4.3.5 || true); \
     elif [ $(php -r "echo PHP_VERSION_ID - PHP_RELEASE_VERSION;") = "70100" ]; then \
-      pecl install swoole-4.5.11; \
+      (pecl install swoole-4.5.11 || true); \
     elif [ $(php -r "echo PHP_MAJOR_VERSION;") = "7" ]; then \
-      pecl install swoole-4.8.12; \
+      (pecl install swoole-4.8.12 || true); \
     else \
-      pecl install swoole; \
+      (pecl install swoole || true); \
     fi; \
     docker-php-ext-enable swoole; \
     php -m | grep -oiE '^swoole$'; \
@@ -421,7 +421,7 @@ RUN set -eux; \
     if [ ${INSTALL_XLSWRITER} = true ]; then \
       # Install Php xlswriter Extension \
       if   [ $(php -r "echo PHP_MAJOR_VERSION;") != "5" ]; then \
-          pecl install xlswriter && \
+          (pecl install xlswriter || true) && \
           docker-php-ext-enable xlswriter && \
           php -m | grep -q 'xlswriter'; \
       else \
@@ -438,7 +438,7 @@ ARG INSTALL_TAINT=false
 RUN if [ ${INSTALL_TAINT} = true ]; then \
   # Install Php TAINT Extension
   if [ $(php -r "echo PHP_MAJOR_VERSION;") = "7" ]; then \
-  pecl install taint; \
+  (pecl install taint || true); \
   docker-php-ext-enable taint; \
   php -m | grep -q 'taint'; \
   else \
@@ -466,7 +466,7 @@ ARG INSTALL_XMLRPC=false
 
 RUN if [ ${INSTALL_XMLRPC} = true ]; then \
   if [ $(php -r "echo PHP_MAJOR_VERSION;") = "8" ]; then \
-  pecl install xmlrpc-1.0.0RC3; \
+  (pecl install xmlrpc-1.0.0RC3 || true); \
   docker-php-ext-enable xmlrpc; \
   else \
   docker-php-ext-install xmlrpc; \
