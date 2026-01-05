@@ -51,7 +51,7 @@ ENV PGID ${PGID}
 RUN set -xe; \
     apt-get update -yqq && \
     (pecl channel-update pecl.php.net || true) && \
-    (groupadd -g ${PGID} ivpldock || true) && \
+    (groupadd -g ${PGID} ivpldock || groupadd ivpldock) && \
     (groupadd docker_env || true) && \
     useradd -l -u ${PUID} -g ivpldock -m ivpldock -G docker_env && \
     usermod -p "*" ivpldock -s /bin/bash && \
