@@ -75,8 +75,8 @@ All scripts include error handling and validation to ensure a smooth experience.
 **Control existing containers:**
 | Script | Mode | Description |
 |--------|------|-------------|
-| `./startmeup.sh` | Foreground | Start with live logs |
-| `./starmeup.sh` | Background | Start in detached mode |
+| `./starmeup.sh` | Foreground | Start with live logs |
+| `./startmeup.sh` | Background | Start in detached mode |
 | `./down.sh` | - | Stop and remove all containers and volumes |
 
 ### 🖥️ Accessing Containers
@@ -541,7 +541,7 @@ This project was originally called **Laradock** and has been forked to target sp
 ---
 
 **Version**: 2.0  
-**Last Updated**: 2026-01-05  
+**Last Updated**: 2025-01-05  
 **Maintained by**: [InvoicePlane Team](https://github.com/InvoicePlane)
 
 > **Note**: Helper scripts use `docker-compose` for backward compatibility, but `docker compose` (v2) is recommended for manual commands.
