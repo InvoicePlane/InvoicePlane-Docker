@@ -40,7 +40,7 @@ RUN apk --update add wget \
     apk --update add openssl-dev; \
   fi
 
-RUN pecl channel-update pecl.php.net; \
+RUN (pecl channel-update pecl.php.net || true); \
   docker-php-ext-install mysqli mbstring pdo pdo_mysql xml pcntl; \
   if [ $(php -r "echo PHP_MAJOR_VERSION;") = "8" ] && \
      [ $(php -r "echo PHP_VERSION_ID - PHP_RELEASE_VERSION;") != "80000" ]; then \

@@ -36,7 +36,7 @@ RUN if [ ${CHANGE_SOURCE} = true ]; then \
 # always run apt update when start and after add new source list, then clean up at end.
 RUN set -xe; \
     apt-get update -yqq && \
-    pecl channel-update pecl.php.net && \
+    (pecl channel-update pecl.php.net || true) && \
     apt-get install -yqq \
       apt-utils \
       gnupg2 \
@@ -888,7 +888,7 @@ ENV LARADOCK_PHALCON_VERSION ${LARADOCK_PHALCON_VERSION}
 
 RUN if [ $INSTALL_PHALCON = true ]; then \
       apt-get update -yqq \
-      && pecl channel-update pecl.php.net \
+      && (pecl channel-update pecl.php.net || true) \
       && apt-get install -yqq libpcre3-dev; \
       pecl install phalcon-${LARADOCK_PHALCON_VERSION}; \
       docker-php-ext-enable phalcon \

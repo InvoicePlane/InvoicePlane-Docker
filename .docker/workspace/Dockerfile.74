@@ -50,8 +50,9 @@ ENV PGID ${PGID}
 # always run apt update when start and after add new source list, then clean up at end.
 RUN set -xe; \
     apt-get update -yqq && \
-    pecl channel-update pecl.php.net && \
+    (pecl channel-update pecl.php.net || true) && \
     groupadd -g ${PGID} ivpldock && \
+    (groupadd docker_env || true) && \
     useradd -l -u ${PUID} -g ivpldock -m ivpldock -G docker_env && \
     usermod -p "*" ivpldock -s /bin/bash && \
     apt-get install -yqq \
@@ -1301,7 +1302,7 @@ ENV IVPLDOCK_PHALCON_VERSION ${IVPLDOCK_PHALCON_VERSION}
 
 RUN if [ $INSTALL_PHALCON = true ]; then \
       apt-get update -yqq \
-      && pecl channel-update pecl.php.net \
+      && (pecl channel-update pecl.php.net || true) \
       && apt-get install -yqq libpcre3-dev; \
       pecl install phalcon-${IVPLDOCK_PHALCON_VERSION}; \
       echo "extension=phalcon.so" >> /etc/php/${IVPLDOCK_PHP_VERSION}/mods-available/phalcon.ini; \

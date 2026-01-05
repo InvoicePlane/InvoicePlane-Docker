@@ -41,7 +41,7 @@ RUN apk --update add wget \
   fi
 
 
-RUN pecl channel-update pecl.php.net; \
+RUN (pecl channel-update pecl.php.net || true); \
   docker-php-ext-install mysqli mbstring pdo pdo_mysql xml pcntl; \
   if [ $(php -r "echo PHP_MAJOR_VERSION;") = "8" ] && \
      [ $(php -r "echo PHP_VERSION_ID - PHP_RELEASE_VERSION;") != "80000" ]; then \
@@ -350,7 +350,7 @@ ENV LARADOCK_PHALCON_VERSION ${LARADOCK_PHALCON_VERSION}
 
 RUN if [ "$INSTALL_PHALCON" = true ]; then \
       apk update \
-      && pecl channel-update pecl.php.net \
+      && (pecl channel-update pecl.php.net || true) \
       && apk add --no-cache libpcre32 \
       && pecl install phalcon-${LARADOCK_PHALCON_VERSION}; \
       docker-php-ext-enable phalcon; \
