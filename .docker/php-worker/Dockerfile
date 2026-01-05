@@ -635,8 +635,8 @@ COPY php-worker/supervisord.conf /etc/supervisord.conf
 
 # Add InvoicePlane banner to bash profile
 COPY invoiceplane-banner.sh /root/invoiceplane-banner.sh
-RUN sed -i 's/\r//g' /root/invoiceplane-banner.sh
-RUN chmod +x /root/invoiceplane-banner.sh && \
+RUN sed -i 's/\r//g' /root/invoiceplane-banner.sh && \
+    chmod +x /root/invoiceplane-banner.sh && \
     echo "" >> /root/.bashrc && \
     echo "# Set container type for banner" >> /root/.bashrc && \
     echo "export CONTAINER_TYPE='PHP Worker Container'" >> /root/.bashrc && \
