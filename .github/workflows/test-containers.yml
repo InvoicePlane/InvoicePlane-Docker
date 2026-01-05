@@ -226,12 +226,12 @@ jobs:
         run: sleep 15
 
       - name: Verify MariaDB version
-        run: docker compose --env-file .env.docker exec -T mariadb mysql --version
+        run: docker compose --env-file .env.docker exec -T mariadb mariadb --version
 
       - name: Test MariaDB connection
         run: |
           docker compose --env-file .env.docker exec -T mariadb \
-            mysql -uroot -proot -e "SELECT 1;"
+            mariadb -uroot -proot -e "SELECT 1;"
 
       - name: Cleanup
         if: always()
