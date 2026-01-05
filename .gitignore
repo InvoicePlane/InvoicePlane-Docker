@@ -3,6 +3,7 @@
 /data
 /.env
 /.env.docker
+/.env.test
 /.project
 .docker-sync
 /.docker/workspace/Dockerfile.slim
@@ -27,4 +28,3 @@
 docker-compose.custom.yml
 
 .DS_Store
-.env.test
