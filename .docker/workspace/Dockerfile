@@ -71,15 +71,11 @@ RUN set -xe; \
       #
       # next lines are here because there is no auto build on dockerhub see https://github.com/ivpldock/ivpldock/pull/1903#issuecomment-463142846
       libzip-dev zip unzip \
+      # Install the zip extension
+      php${IVPLDOCK_PHP_VERSION}-zip \
       # nasm
       nasm && \
-    # Install the zip extension - try package first, fallback to PECL
-    (apt-get install -yqq php${IVPLDOCK_PHP_VERSION}-zip || \
-     (pecl install zip && \
-      mkdir -p /etc/php/${IVPLDOCK_PHP_VERSION}/mods-available /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d && \
-      echo "extension=zip.so" > /etc/php/${IVPLDOCK_PHP_VERSION}/mods-available/zip.ini && \
-      ln -sf /etc/php/${IVPLDOCK_PHP_VERSION}/mods-available/zip.ini /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/20-zip.ini)) && \
-    php -m | grep 'zip'
+      php -m | grep -q 'zip'
 
 #
 #--------------------------------------------------------------------------
