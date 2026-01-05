@@ -74,6 +74,8 @@ RUN set -xe; \
       libzip-dev zip unzip \
       # nasm
       nasm && \
+      # Install the zip extension if available (base image already includes it, but try anyway)
+      (apt-get install -yqq php${IVPLDOCK_PHP_VERSION}-zip || true) && \
       php -m | grep -q 'zip'
 
 #
