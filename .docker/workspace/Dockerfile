@@ -56,9 +56,8 @@ RUN set -xe; \
     # Rename existing ubuntu user/group to ivpldock if they exist
     (groupmod -n ivpldock ubuntu || groupadd -g ${PGID} ivpldock || groupadd ivpldock) && \
     (groupadd docker_env || true) && \
-    (usermod -l ivpldock -d /home/ivpldock -m ubuntu || useradd -l -u ${PUID} -g ivpldock -m ivpldock -G docker_env) && \
+    (usermod -l ivpldock ubuntu && usermod -d /home/ivpldock -m ivpldock && usermod -aG docker_env ivpldock || useradd -l -u ${PUID} -g ivpldock -m ivpldock -G docker_env) && \
     usermod -p "*" ivpldock -s /bin/bash && \
-    (usermod -aG docker_env ivpldock || true) && \
     apt-get install -yqq \
       apt-utils \
       #
