@@ -117,7 +117,7 @@ ARG INSTALL_GNUPG=false
 
 RUN if [ ${INSTALL_GNUPG} = true ]; then \
       apt-get -yq install libgpgme-dev; \
-      pecl install gnupg; \
+      (pecl install gnupg || true); \
       docker-php-ext-enable gnupg; \
       php -m | grep -q 'gnupg'; \
     fi
@@ -132,9 +132,9 @@ RUN if [ ${INSTALL_SSH2} = true ]; then \
     # Install the ssh2 extension
     apt-get -y install libssh2-1-dev && \
     if [ $(php -r "echo PHP_MAJOR_VERSION;") = "5" ]; then \
-        pecl install -a ssh2-0.13; \
+        (pecl install -a ssh2-0.13 || true); \
     else \
-        pecl install -a ssh2-1.3.1; \
+        (pecl install -a ssh2-1.3.1 || true); \
     fi && \
     docker-php-ext-enable ssh2 \
 ;fi
@@ -220,18 +220,18 @@ RUN if [ ${INSTALL_XDEBUG} = true ]; then \
   # https://xdebug.org/docs/compat
   if [ $(php -r "echo PHP_MAJOR_VERSION;") = "8" ] || { [ $(php -r "echo PHP_MAJOR_VERSION;") = "7" ] && { [ $(php -r "echo PHP_MINOR_VERSION;") = "4" ] || [ $(php -r "echo PHP_MINOR_VERSION;") = "3" ] ;} ;}; then \
     if [ $(php -r "echo PHP_MAJOR_VERSION;") = "8" ]; then \
-      pecl install xdebug-3.3.0; \
+      (pecl install xdebug-3.3.0 || true); \
     else \
-      pecl install xdebug-3.1.6; \
+      (pecl install xdebug-3.1.6 || true); \
     fi; \
   else \
     if [ $(php -r "echo PHP_MAJOR_VERSION;") = "5" ]; then \
-      pecl install xdebug-2.5.5; \
+      (pecl install xdebug-2.5.5 || true); \
     else \
       if [ $(php -r "echo PHP_MINOR_VERSION;") = "0" ]; then \
-        pecl install xdebug-2.9.0; \
+        (pecl install xdebug-2.9.0 || true); \
       else \
-        pecl install xdebug-2.9.8; \
+        (pecl install xdebug-2.9.8 || true); \
       fi \
     fi \
   fi && \
@@ -266,7 +266,7 @@ ARG INSTALL_PCOV=false
 
 RUN if [ ${INSTALL_PCOV} = true ]; then \
   if [ $(php -r "echo PHP_MAJOR_VERSION;") = "8" ]  || { [ $(php -r "echo PHP_MAJOR_VERSION;") = "7" ] && [ $(php -r "echo PHP_MINOR_VERSION;") != "0" ]; }; then \
-    pecl install pcov && \
+    (pecl install pcov || true) && \
     docker-php-ext-enable pcov \
   ;fi \
 ;fi
@@ -305,11 +305,11 @@ ARG INSTALL_PHPREDIS=false
 RUN if [ ${INSTALL_PHPREDIS} = true ]; then \
     # Install Php Redis Extension
     if [ $(php -r "echo PHP_MAJOR_VERSION;") = "5" ]; then \
-      pecl install -o -f redis-4.3.0; \
+      (pecl install -o -f redis-4.3.0 || true); \
     elif [ $(php -r "echo PHP_MAJOR_VERSION;") = "7" ] && { [ $(php -r "echo PHP_MINOR_VERSION;") = "0" ] || [ $(php -r "echo PHP_MINOR_VERSION;") = "1" ] ;}; then \
-      pecl install -o -f redis-5.3.7; \
+      (pecl install -o -f redis-5.3.7 || true); \
     else \
-      pecl install -o -f redis; \
+      (pecl install -o -f redis || true); \
     fi \
     && rm -rf /tmp/pear \
     && docker-php-ext-enable redis \
@@ -324,15 +324,15 @@ RUN set -eux; \
     if [ ${INSTALL_SWOOLE} = true ]; then \
       # Install Php Swoole Extension
       if   [ $(php -r "echo PHP_VERSION_ID - PHP_RELEASE_VERSION;") = "50600" ]; then \
-        pecl install swoole-2.0.10; \
+        (pecl install swoole-2.0.10 || true); \
       elif [ $(php -r "echo PHP_VERSION_ID - PHP_RELEASE_VERSION;") = "70000" ]; then \
-        pecl install swoole-4.3.5; \
+        (pecl install swoole-4.3.5 || true); \
       elif [ $(php -r "echo PHP_VERSION_ID - PHP_RELEASE_VERSION;") = "70100" ]; then \
-        pecl install swoole-4.5.11; \
+        (pecl install swoole-4.5.11 || true); \
       elif [ $(php -r "echo PHP_MAJOR_VERSION;") = "7" ]; then \
-        pecl install swoole-4.8.12; \
+        (pecl install swoole-4.8.12 || true); \
       else \
-        pecl install swoole; \
+        (pecl install swoole || true); \
       fi; \
       docker-php-ext-enable swoole; \
       php -m | grep -q 'swoole'; \
@@ -347,7 +347,7 @@ ARG INSTALL_TAINT=false
 RUN if [ ${INSTALL_TAINT} = true ]; then \
     # Install Php TAINT Extension
     if [ $(php -r "echo PHP_MAJOR_VERSION;") = "7" ]; then \
-      pecl install taint && \
+      (pecl install taint || true) && \
       docker-php-ext-enable taint && \
       php -m | grep -q 'taint'; \
     fi \
@@ -362,18 +362,18 @@ ARG INSTALL_MONGO=false
 RUN if [ ${INSTALL_MONGO} = true ]; then \
     # Install the mongodb extension
     if [ $(php -r "echo PHP_MAJOR_VERSION;") = "5" ]; then \
-      pecl install mongo; \
+      (pecl install mongo || true); \
       docker-php-ext-enable mongo; \
       php -m | grep -oiE '^mongo$'; \
     else \
       if [ $(php -r "echo PHP_MAJOR_VERSION;") = "7" ] && [ $(php -r "echo PHP_MINOR_VERSION;") != "4" ]; then \
         if [ $(php -r "echo PHP_MINOR_VERSION;") = "0" ] || [ $(php -r "echo PHP_MINOR_VERSION;") = "1" ]; then \
-          pecl install mongodb-1.9.2; \
+          (pecl install mongodb-1.9.2 || true); \
         else \
-          pecl install mongodb-1.16.2; \
+          (pecl install mongodb-1.16.2 || true); \
         fi; \
       else \
-        pecl install mongodb; \
+        (pecl install mongodb || true); \
       fi; \
       docker-php-ext-enable mongodb; \
       php -m | grep -oiE '^mongodb$'; \
@@ -390,7 +390,7 @@ RUN set -eux; \
     if [ ${INSTALL_XHPROF} = true ]; then \
       # Install the php xhprof extension
       if   [ $(php -r "echo PHP_MAJOR_VERSION;") != 5 ]; then \
-        pecl install xhprof; \
+        (pecl install xhprof || true); \
       else \
         curl -L -o /tmp/xhprof.tar.gz "https://codeload.github.com/phacility/xhprof/tar.gz/master"; \
         mkdir -p /tmp/xhprof; \
@@ -434,9 +434,9 @@ RUN set -eux; \
         || [ ${IVPLDOCK_PHP_VERSION} = "7.1" ] \
         || [ ${IVPLDOCK_PHP_VERSION} = "7.0" ] \
         || [ ${IVPLDOCK_PHP_VERSION} = "5.6" ]; then \
-        pecl install amqp-1.11.0; \
+        (pecl install amqp-1.11.0 || true); \
       else \
-        pecl install amqp; \
+        (pecl install amqp || true); \
       fi; \
       docker-php-ext-enable amqp; \
       php -m | grep -oiE '^amqp$'; \
@@ -509,7 +509,7 @@ RUN set -eux; \
     if [ ${INSTALL_XLSWRITER} = true ]; then \
       # Install Php xlswriter Extension \
       if [ $(php -r "echo PHP_MAJOR_VERSION;") != "5" ]; then \
-          pecl install xlswriter  &&\
+          (pecl install xlswriter || true) &&\
           docker-php-ext-enable xlswriter &&\
           php -m | grep -q 'xlswriter'; \
       else \
@@ -642,15 +642,15 @@ RUN if [ ${INSTALL_OCI8} = true ]; then \
       freetds-dev && \
     # Install PHP extensions
     if [ $(php -r "echo PHP_MAJOR_VERSION;") = "5" ]; then \
-      echo 'instantclient,/opt/oracle/instantclient_${ORACLE_INSTANT_CLIENT_VERSION}/' | pecl install oci8-2.0.12; \
+      (echo 'instantclient,/opt/oracle/instantclient_${ORACLE_INSTANT_CLIENT_VERSION}/' | pecl install oci8-2.0.12 || true); \
     elif [ $(php -r "echo PHP_MAJOR_VERSION;") = "7" ]; then \
-      echo 'instantclient,/opt/oracle/instantclient_${ORACLE_INSTANT_CLIENT_VERSION}/' | pecl install oci8-2.2.0; \
+      (echo 'instantclient,/opt/oracle/instantclient_${ORACLE_INSTANT_CLIENT_VERSION}/' | pecl install oci8-2.2.0 || true); \
     elif [ $(php -r "echo PHP_MAJOR_VERSION;") = "8" ] && [ $(php -r "echo PHP_MINOR_VERSION;") = "0" ]; then \
-      echo "instantclient,/opt/oracle/instantclient_${ORACLE_INSTANT_CLIENT_VERSION}/" | pecl install oci8-3.0.1; \
+      (echo "instantclient,/opt/oracle/instantclient_${ORACLE_INSTANT_CLIENT_VERSION}/" | pecl install oci8-3.0.1 || true); \
     elif [ $(php -r "echo PHP_MAJOR_VERSION . PHP_MINOR_VERSION;") = "81" ]; then \
-        echo "instantclient,/opt/oracle/instantclient_${ORACLE_INSTANT_CLIENT_VERSION}/" | pecl install oci8-3.2.1; \
+        (echo "instantclient,/opt/oracle/instantclient_${ORACLE_INSTANT_CLIENT_VERSION}/" | pecl install oci8-3.2.1 || true); \
     else \
-      echo "instantclient,/opt/oracle/instantclient_${ORACLE_INSTANT_CLIENT_VERSION}/" | pecl install oci8; \
+      (echo "instantclient,/opt/oracle/instantclient_${ORACLE_INSTANT_CLIENT_VERSION}/" | pecl install oci8 || true); \
     fi \
     && docker-php-ext-configure pdo_oci --with-pdo-oci=instantclient,/opt/oracle/instantclient_${ORACLE_INSTANT_CLIENT_VERSION},${ORACLE_INSTANT_CLIENT_MAJOR}.${ORACLE_INSTANT_CLIENT_MINOR} \
         && docker-php-ext-configure pdo_dblib --with-libdir=/lib/x86_64-linux-gnu \
@@ -835,7 +835,7 @@ RUN if [ ${INSTALL_IMAGEMAGICK} = true ]; then \
       make install && \
       rm -r /tmp/imagick; \
     else \
-      pecl install imagick; \
+      (pecl install imagick || true); \
     fi && \
     docker-php-ext-enable imagick; \
     php -m | grep -q 'imagick' \
@@ -849,7 +849,7 @@ ARG INSTALL_SMB=false
 
 RUN if [ ${INSTALL_SMB} = true ]; then \
     apt-get install -yqq smbclient libsmbclient-dev coreutils && \
-    pecl install smbclient && \
+    (pecl install smbclient || true) && \
     docker-php-ext-enable smbclient \
 ;fi
 
@@ -902,9 +902,9 @@ ARG INSTALL_APCU=false
 
 RUN if [ ${INSTALL_APCU} = true ]; then \
     if [ $(php -r "echo PHP_MAJOR_VERSION;") = "5" ]; then \
-        pecl install -a apcu-4.0.11; \
+        (pecl install -a apcu-4.0.11 || true); \
     else \
-        pecl install apcu; \
+        (pecl install apcu || true); \
     fi && \
     docker-php-ext-enable apcu \
 ;fi
@@ -920,11 +920,11 @@ ARG INSTALL_YAML=false
 RUN if [ ${INSTALL_YAML} = true ]; then \
     apt-get install -yqq libyaml-dev; \
     if [ $(php -r "echo PHP_MAJOR_VERSION;") = "5" ]; then \
-        echo '' | pecl install -a yaml-1.3.2; \
+        (echo '' | pecl install -a yaml-1.3.2 || true); \
     elif [ $(php -r "echo PHP_MAJOR_VERSION;") = "7" ] && [ $(php -r "echo PHP_MINOR_VERSION;") = "0" ]; then \
-        echo '' | pecl install yaml-2.0.4; \
+        (echo '' | pecl install yaml-2.0.4 || true); \
     else \
-        echo '' | pecl install yaml; \
+        (echo '' | pecl install yaml || true); \
     fi \
     && docker-php-ext-enable yaml \
 ;fi
@@ -937,7 +937,7 @@ ARG INSTALL_RDKAFKA=false
 
 RUN if [ ${INSTALL_RDKAFKA} = true ]; then \
     apt-get install -yqq librdkafka-dev && \
-    pecl install rdkafka && \
+    (pecl install rdkafka || true) && \
     docker-php-ext-enable rdkafka \
 ;fi
 
@@ -1115,7 +1115,7 @@ USER root
 ARG INSTALL_TRADER=false
 
 RUN if [ ${INSTALL_TRADER} = true ]; then \
-    pecl install trader \
+    (pecl install trader || true) \
     && echo "extension=trader.so" >> $PHP_INI_DIR/conf.d/trader.ini \
 ;fi
 
@@ -1127,7 +1127,7 @@ ARG INSTALL_MAILPARSE=false
 
 RUN if [ ${INSTALL_MAILPARSE} = true ]; then \
     # Install mailparse extension
-    printf "\n" | pecl install -o -f mailparse \
+    (printf "\n" | pecl install -o -f mailparse || true) \
     &&  rm -rf /tmp/pear \
     &&  docker-php-ext-enable mailparse \
 ;fi
@@ -1157,7 +1157,7 @@ ARG INSTALL_XMLRPC=false
 RUN if [ ${INSTALL_XMLRPC} = true ]; then \
   apt-get -yq install libxml2-dev; \
   if [ $(php -r "echo PHP_MAJOR_VERSION;") = "8" ]; then \
-    pecl install xmlrpc-1.0.0RC3; \
+    (pecl install xmlrpc-1.0.0RC3 || true); \
     docker-php-ext-enable xmlrpc; \
   else \
     docker-php-ext-install xmlrpc; \
@@ -1186,7 +1186,7 @@ RUN if [ ${INSTALL_PHPDECIMAL} = true ]; then \
     else \
       apt-get install -yqq libmpdec-dev; \
     fi; \
-    pecl install decimal; \
+    (pecl install decimal || true); \
     docker-php-ext-enable decimal; \
     php -m | grep -oiE '^decimal$'; \
   fi; \
@@ -1208,9 +1208,9 @@ RUN set -eux; \
       phpize && ./configure && make && make install;\
     else \
       if [ $(php -r "echo PHP_MAJOR_VERSION;") = "5" ]; then \
-        pecl install zookeeper-0.5.0; \
+        (pecl install zookeeper-0.5.0 || true); \
       else \
-        pecl install zookeeper-0.7.2; \
+        (pecl install zookeeper-0.7.2 || true); \
       fi; \
     fi; \
     docker-php-ext-enable zookeeper; \
