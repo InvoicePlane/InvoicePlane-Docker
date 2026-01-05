@@ -91,6 +91,24 @@ Edit `.env.docker` to customize:
 - Port mappings
 - Service options
 
+### Docker Build Caching
+
+Docker automatically caches build layers to speed up subsequent builds. When you build a service like `beanstalkd`, Docker Compose will:
+
+1. Check if dependent services (php-fpm, workspace) need to be built
+2. Use cached layers if the Dockerfile and context haven't changed
+3. Only rebuild layers that have changed
+
+**Tips for better caching:**
+- Docker keeps built images in cache even if you stop containers
+- Rebuilds are only needed when Dockerfiles or build args change
+- Use `--no-cache` flag only when you need to force a complete rebuild:
+  ```bash
+  docker compose --env-file .env.docker build --no-cache php-fpm
+  ```
+
+**Example**: If you've just built `php-fpm`, then building `beanstalkd` will use the cached `php-fpm` image instead of rebuilding it.
+
 ### Xdebug Configuration
 
 Xdebug is configured in trigger mode to prevent connection warnings during builds. To use Xdebug for debugging:
