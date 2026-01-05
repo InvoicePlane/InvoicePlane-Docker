@@ -53,7 +53,7 @@ ENV DEBIAN_FRONTEND=noninteractive \
 RUN set -xe; \
     apt-get update -yqq && \
     (pecl channel-update pecl.php.net || true) && \
-    groupadd -g ${PGID} ivpldock && \
+    (groupadd -g ${PGID} ivpldock || true) && \
     (groupadd docker_env || true) && \
     useradd -l -u ${PUID} -g ivpldock -m ivpldock -G docker_env && \
     usermod -p "*" ivpldock -s /bin/bash && \
