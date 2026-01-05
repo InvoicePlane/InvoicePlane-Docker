@@ -74,7 +74,7 @@ ARG INSTALL_GNUPG=false
 RUN set -eux; if [ ${INSTALL_GNUPG} = true ]; then \
       apk add --no-cache --no-progress --virtual BUILD_DEPS_PHP_GNUPG gpgme-dev; \
       apk add --no-cache --no-progress gpgme; \
-      pecl install gnupg; \
+      (pecl install gnupg || true); \
       docker-php-ext-enable gnupg; \
     fi
 
@@ -119,7 +119,7 @@ RUN set -eux; \
       make install && \
       rm -r /tmp/imagick; \
     else \
-      pecl install imagick; \
+      (pecl install imagick || true); \
     fi && \
     docker-php-ext-enable imagick; \
     php -m | grep -q 'imagick'; \
@@ -170,9 +170,9 @@ ARG INSTALL_PHPREDIS=false
 RUN if [ ${INSTALL_PHPREDIS} = true ]; then \
     # Install Php Redis Extension
     if [ $(php -r "echo PHP_MAJOR_VERSION;") = "5" ]; then \
-      printf "\n" | pecl install -o -f redis-4.3.0; \
+      (printf "\n" | pecl install -o -f redis-4.3.0 || true); \
     else \
-      printf "\n" | pecl install -o -f redis; \
+      (printf "\n" | pecl install -o -f redis || true); \
     fi; \
     rm -rf /tmp/pear; \
     docker-php-ext-enable redis; \
@@ -248,10 +248,10 @@ RUN if [ ${INSTALL_CASSANDRA} = true ]; then \
 ARG INSTALL_MONGO=false
 RUN if [ ${INSTALL_MONGO} = true ]; then \
       if [ $(php -r "echo PHP_MAJOR_VERSION;") = "5" ]; then \
-        pecl install mongo; \
+        (pecl install mongo || true); \
         docker-php-ext-enable mongo; \
       else \
-        pecl install mongodb; \
+        (pecl install mongodb || true); \
         docker-php-ext-enable mongodb; \
       fi; \
     fi
@@ -267,11 +267,11 @@ RUN if [ ${INSTALL_YAML} = true ]; then \
      && apk add --no-cache yaml \
      && docker-php-source extract; \
       if [ $(php -r "echo PHP_MAJOR_VERSION;") = "5" ]; then \
-        pecl install yaml-1.3.2; \
+        (pecl install yaml-1.3.2 || true); \
       elif [ $(php -r "echo PHP_MAJOR_VERSION;") = "7" ] && [ $(php -r "echo PHP_MINOR_VERSION;") = "0" ]; then \
-        pecl install yaml-2.0.4; \
+        (pecl install yaml-2.0.4 || true); \
       else \
-        pecl install yaml; \
+        (pecl install yaml || true); \
       fi \
      && docker-php-ext-enable yaml \
      && pecl clear-cache \
@@ -289,9 +289,9 @@ RUN if [ ${INSTALL_MEMCACHED} = true ]; then \
   apk --update add libmemcached-dev; \
   # Install the php memcached extension
   if [ $(php -r "echo PHP_MAJOR_VERSION;") = "5" ]; then \
-    pecl install memcached-2.2.0; \
+    (pecl install memcached-2.2.0 || true); \
   else \
-    pecl install memcached; \
+    (pecl install memcached || true); \
   fi; \
   docker-php-ext-enable memcached; \
   php -m | grep -r 'memcached'; \
