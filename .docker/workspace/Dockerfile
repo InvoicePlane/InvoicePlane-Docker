@@ -52,8 +52,9 @@ ENV DEBIAN_FRONTEND=noninteractive \
 # always run apt update when start and after add new source list, then clean up at end.
 RUN set -xe; \
     apt-get update -yqq && \
-    pecl channel-update pecl.php.net && \
+    (pecl channel-update pecl.php.net || true) && \
     groupadd -g ${PGID} ivpldock && \
+    (groupadd docker_env || true) && \
     useradd -l -u ${PUID} -g ivpldock -m ivpldock -G docker_env && \
     usermod -p "*" ivpldock -s /bin/bash && \
     apt-get install -yqq \
@@ -78,7 +79,7 @@ RUN set -xe; \
       mkdir -p /etc/php/${IVPLDOCK_PHP_VERSION}/mods-available /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d && \
       echo "extension=zip.so" > /etc/php/${IVPLDOCK_PHP_VERSION}/mods-available/zip.ini && \
       ln -sf /etc/php/${IVPLDOCK_PHP_VERSION}/mods-available/zip.ini /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/20-zip.ini)) && \
-    php -m | grep -q 'zip'
+    php -m | grep 'zip'
 
 #
 #--------------------------------------------------------------------------
