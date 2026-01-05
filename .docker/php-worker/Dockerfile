@@ -675,7 +675,7 @@ ENTRYPOINT ["/usr/bin/supervisord", "-n", "-c",  "/etc/supervisord.conf"]
 #--------------------------------------------------------------------------
 #
 
-RUN php -v 2>/dev/null | head -n 1 | grep -q "PHP ${IVPLDOCK_PHP_VERSION}."
+RUN php -v | head -n 1 | grep -q "PHP ${IVPLDOCK_PHP_VERSION}."
 
 #
 #--------------------------------------------------------------------------
