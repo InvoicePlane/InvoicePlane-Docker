@@ -180,7 +180,9 @@ RUN if [ $(php -r "echo PHP_MAJOR_VERSION;") = "8" ]; then \
 
 ### Secrets Management
 
-- Never commit `.env.docker` files
+- Never commit `.env.docker` files - this is a local configuration file that may contain sensitive data
+- Add `.env.docker` to `.gitignore` to prevent accidental commits
+- Use `.env.example` as the committed template for users to copy and modify
 - Use environment variables for sensitive data
 - Document required secrets in `.env.example`
 

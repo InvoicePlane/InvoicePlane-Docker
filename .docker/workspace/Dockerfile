@@ -53,10 +53,20 @@ ENV DEBIAN_FRONTEND=noninteractive \
 RUN set -xe; \
     apt-get update -yqq && \
     (pecl channel-update pecl.php.net || true) && \
-    # Rename existing ubuntu user/group to ivpldock if they exist
-    (groupmod -n ivpldock ubuntu || groupadd -g ${PGID} ivpldock || groupadd ivpldock) && \
+    # Ensure docker_env group exists for workspace user
     (groupadd docker_env || true) && \
-    (usermod -l ivpldock ubuntu && usermod -d /home/ivpldock -m ivpldock && usermod -aG docker_env ivpldock || useradd -l -u ${PUID} -g ivpldock -m ivpldock -G docker_env) && \
+    # Ensure ivpldock group exists: try requested PGID first, then fall back to default GID
+    if ! getent group ivpldock > /dev/null; then \
+        if ! groupadd -g ${PGID} ivpldock 2>/dev/null; then \
+            groupadd ivpldock; \
+        fi; \
+    fi && \
+    # Ensure ivpldock user exists and is member of docker_env; do not rename existing system users
+    if ! id -u ivpldock > /dev/null 2>&1; then \
+        useradd -u ${PUID} -g ivpldock -m ivpldock -G docker_env; \
+    else \
+        usermod -aG docker_env ivpldock; \
+    fi && \
     usermod -p "*" ivpldock -s /bin/bash && \
     apt-get install -yqq \
       apt-utils \
@@ -320,7 +330,11 @@ ARG XDEBUG_PORT=9003
 
 RUN (apt-get install -yqq pkg-config php-xml php${IVPLDOCK_PHP_VERSION}-xml || true) && \
   (pecl install xdebug-3.3.0 || true) && \
-  (echo "zend_extension=xdebug.so" >> /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/20-xdebug.ini || true)
+  (echo "zend_extension=xdebug.so" >> /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/20-xdebug.ini || true) && \
+  # Verify Xdebug installation
+  if ! php -m | grep -q xdebug; then \
+    echo "WARNING: Xdebug extension is not loaded after installation attempt"; \
+  fi
 
 RUN echo "##### PHP Version #####" \
     ${IVPLDOCK_PHP_VERSION} \
@@ -527,15 +541,6 @@ USER root
 
 ARG INSTALL_PYTHON=false
 
-RUN if [ ${INSTALL_PYTHON} = true ]; then \
-  (apt-get -y install python python-dev build-essential  \
-  && curl https://bootstrap.pypa.io/pip/2.7/get-pip.py -o get-pip.py  \
-  && python get-pip.py  \
-  && rm get-pip.py  \
-  && python -m pip install --upgrade pip  \
-  && python -m pip install --upgrade virtualenv) || true \
-;fi
-
 ###########################################################################
 # PYTHON3:
 ###########################################################################
@@ -543,12 +548,12 @@ RUN if [ ${INSTALL_PYTHON} = true ]; then \
 ARG INSTALL_PYTHON3=false
 
 RUN if [ ${INSTALL_PYTHON3} = true ]; then \
-  (apt-get -y install python3 python3-dev build-essential  \
+  apt-get -y install python3 python3-dev build-essential  \
   && curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py  \
   && python3 get-pip.py  \
   && rm get-pip.py  \
   && python3 -m pip install --upgrade --force-reinstall pip  \
-  && python3 -m pip install --upgrade virtualenv) || true \
+  && python3 -m pip install --upgrade virtualenv \
 ;fi
 
 USER ivpldock
