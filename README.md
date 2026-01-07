@@ -356,7 +356,7 @@ Edit `.env.docker` to customize your environment:
 **Core Settings:**
 ```bash
 # PHP Version
-PHP_VERSION=8.1  # Options: 7.4, 8.0, 8.1, 8.2, 8.3, 8.4
+PHP_VERSION=8.4  # Options: 7.4, 8.0, 8.1, 8.2, 8.3, 8.4
 
 # Project Path
 APP_CODE_PATH_HOST=../projects/
