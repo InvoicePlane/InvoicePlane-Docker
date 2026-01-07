@@ -260,12 +260,15 @@ jobs:
         timeout-minutes: 5
 
       - name: Verify Redis is running
-        run: docker compose --env-file .env.docker exec -T redis redis-cli ping
+        run: |
+          REDIS_PASSWORD=$(grep REDIS_PASSWORD .env.docker | cut -d '=' -f2)
+          docker compose --env-file .env.docker exec -T redis redis-cli -a "$REDIS_PASSWORD" ping
 
       - name: Test Redis operations
         run: |
-          docker compose --env-file .env.docker exec -T redis redis-cli set test_key "test_value"
-          docker compose --env-file .env.docker exec -T redis redis-cli get test_key
+          REDIS_PASSWORD=$(grep REDIS_PASSWORD .env.docker | cut -d '=' -f2)
+          docker compose --env-file .env.docker exec -T redis redis-cli -a "$REDIS_PASSWORD" set test_key "test_value"
+          docker compose --env-file .env.docker exec -T redis redis-cli -a "$REDIS_PASSWORD" get test_key
 
       - name: Cleanup
         if: always()

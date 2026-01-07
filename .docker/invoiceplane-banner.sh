@@ -24,21 +24,6 @@ show_logo() {
 EOF
 }
 
-# Helper function to display container info box
-show_info_box() {
-    local container_type="${1:-Unknown}"
-    local user_name
-    local host_name
-    
-    user_name=$(whoami 2>/dev/null || echo "unknown")
-    host_name=$(hostname 2>/dev/null || echo "unknown")
-    
-    echo -e "${IPBLUE}╔════════════════════════════════════════════════════════════╗${NC}"
-    echo -e "${IPBLUE}║${NC}  ${container_type}${IPBLUE}║${NC}"
-    echo -e "${IPBLUE}║${NC}  Container: ${GREEN}${host_name}${NC}  |  User: ${YELLOW}${user_name}${NC}  |  Dir: ${GREEN}\w${NC}${IPBLUE}║${NC}"
-    echo -e "${IPBLUE}╚════════════════════════════════════════════════════════════╝${NC}"
-}
-
 # Helper function to show PHP version if available
 show_php_version() {
     if command -v php >/dev/null 2>&1; then
@@ -85,12 +70,12 @@ display_banner() {
     echo -e "${IPBLUE}╚════════════════════════════════════════════════════════════╝${NC}"
     
     # Show additional info
-    local user_name host_name pwd
+    local user_name host_name current_dir
     user_name=$(whoami 2>/dev/null || echo "unknown")
     host_name=$(hostname 2>/dev/null || echo "unknown")
-    pwd=$(pwd 2>/dev/null || echo "~")
+    current_dir=$(pwd 2>/dev/null || echo "~")
     
-    echo -e "Container: ${GREEN}${host_name}${NC}  |  User: ${YELLOW}${user_name}${NC}  |  Dir: ${GREEN}${pwd}${NC}"
+    echo -e "Container: ${GREEN}${host_name}${NC}  |  User: ${YELLOW}${user_name}${NC}  |  Dir: ${GREEN}${current_dir}${NC}"
     
     # Display quick commands
     show_quick_commands

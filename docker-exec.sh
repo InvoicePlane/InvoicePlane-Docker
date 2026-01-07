@@ -73,10 +73,16 @@ echo "Project: /var/www/projects/${PROJECT_DIR}"
 echo "Command: ${COMMAND}"
 echo "----------------------------------------"
 
+# Temporarily disable errexit to capture exit code
+set +e
+
 # Execute the command in the container
 docker exec -it "$CONTAINER_ID" bash -c "cd /var/www/projects/${PROJECT_DIR} && ${COMMAND}"
 
 EXIT_CODE=$?
+
+# Re-enable errexit
+set -e
 
 if [ $EXIT_CODE -eq 0 ]; then
     echo "----------------------------------------"
