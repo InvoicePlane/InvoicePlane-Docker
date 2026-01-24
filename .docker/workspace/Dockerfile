@@ -81,12 +81,12 @@ RUN set -xe; \
       # base image (https://github.com/Laradock/workspace).
       #
       # next lines are here because there is no auto build on dockerhub see https://github.com/ivpldock/ivpldock/pull/1903#issuecomment-463142846
-      libzip-dev zip unzip \
+      zip unzip \
       # nasm
-      nasm && \
+      nasm
       # Install the zip extension if available (base image already includes it, but try anyway)
-      (apt-get install -yqq php${IVPLDOCK_PHP_VERSION}-zip || true) && \
-      php -m | grep -q 'zip'
+      # (apt-get install -yqq php${IVPLDOCK_PHP_VERSION}-zip || true) && \
+      # php -m | grep -q 'zip'
 
 #
 #--------------------------------------------------------------------------
