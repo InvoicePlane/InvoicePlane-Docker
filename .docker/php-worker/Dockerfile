@@ -41,7 +41,7 @@ RUN apk --update add wget \
   fi
 
 
-RUN pecl channel-update pecl.php.net; \
+RUN (pecl channel-update pecl.php.net || true); \
   docker-php-ext-install mysqli mbstring pdo pdo_mysql xml pcntl; \
   if [ $(php -r "echo PHP_MAJOR_VERSION;") = "8" ] && \
      [ $(php -r "echo PHP_VERSION_ID - PHP_RELEASE_VERSION;") != "80000" ]; then \
@@ -56,8 +56,8 @@ ENV PUID ${PUID}
 ARG PGID=1000
 ENV PGID ${PGID}
 
-RUN addgroup -g ${PGID} ivpldock && \
-  adduser -D -G ivpldock -u ${PUID} ivpldock
+RUN addgroup -g ${PGID} laradock && \
+  adduser -D -G laradock -u ${PUID} laradock
 
 #Install BZ2:
 ARG INSTALL_BZ2=false
@@ -84,7 +84,7 @@ RUN set -eux; \
       ./configure; \
       make && make install; \
     else \
-      pecl install gnupg; \
+      (pecl install gnupg || true); \
     fi; \
     docker-php-ext-enable gnupg; \
     php -m | grep -oiE '^gnupg$'; \
@@ -120,9 +120,9 @@ RUN set -eux; \
   if [ $(php -r "echo PHP_MAJOR_VERSION;") = "8" ]; then \
   cd /tmp && \
   if [ ${IMAGEMAGICK_VERSION} = "latest" ]; then \
-    git clone https://github.com/Imagick/imagick; \
+  git clone https://github.com/Imagick/imagick; \
   else \
-    git clone --branch ${IMAGEMAGICK_VERSION} https://github.com/Imagick/imagick; \
+  git clone --branch ${IMAGEMAGICK_VERSION} https://github.com/Imagick/imagick; \
   fi && \
   cd imagick && \
   phpize && \
@@ -131,7 +131,7 @@ RUN set -eux; \
   make install && \
   rm -r /tmp/imagick; \
   else \
-  pecl install imagick; \
+  (pecl install imagick || true); \
   fi && \
   docker-php-ext-enable imagick; \
   php -m | grep -q 'imagick'; \
@@ -160,26 +160,18 @@ RUN if [ ${INSTALL_SOAP} = true ]; then \
 ARG INSTALL_MONGO=false
 RUN if [ ${INSTALL_MONGO} = true ]; then \
     if [ $(php -r "echo PHP_MAJOR_VERSION;") = "5" ]; then \
-      pecl install mongo; \
+      (pecl install mongo || true); \
       docker-php-ext-enable mongo; \
       php -m | grep -oiE '^mongo$'; \
     else \
-      if [ $(php -r "echo PHP_MAJOR_VERSION;") = "7" ]; then \
+      if [ $(php -r "echo PHP_MAJOR_VERSION;") = "7" ] && [ $(php -r "echo PHP_MINOR_VERSION;") != "4" ]; then \
         if [ $(php -r "echo PHP_MINOR_VERSION;") = "0" ] || [ $(php -r "echo PHP_MINOR_VERSION;") = "1" ]; then \
-          pecl install mongodb-1.9.2; \
+          (pecl install mongodb-1.9.2 || true); \
         else \
-          if [ $(php -r "echo PHP_MINOR_VERSION;") = "4" ]; then \
-            pecl install mongodb-1.20.1; \
-          else \
-            pecl install mongodb-1.16.2; \
-          fi; \
+          (pecl install mongodb-1.16.2 || true); \
         fi; \
       else \
-        if [ $(php -r "echo PHP_MAJOR_VERSION;") = "8" ] && [ $(php -r "echo PHP_MINOR_VERSION;") = "0" ]; then \
-            pecl install mongodb-1.20.1; \
-        else \
-            pecl install mongodb; \
-        fi; \
+        (pecl install mongodb || true); \
       fi; \
       docker-php-ext-enable mongodb; \
       php -m | grep -oiE '^mongodb$'; \
@@ -212,7 +204,7 @@ RUN if [ ${INSTALL_OCI8} = true ] && [ $(php -r "echo PHP_MAJOR_VERSION;") = "7"
   ln -s ${ORACLE_HOME}/sqlplus /usr/bin/sqlplus &&\
   ln -s /usr/lib/libnsl.so.2.0.0  /usr/lib/libnsl.so.1 && \
   ## Build OCI8 with PECL
-  echo "instantclient,${ORACLE_HOME}" | pecl install oci8 && \
+  (echo "instantclient,${ORACLE_HOME}" | pecl install oci8 || true) && \
   echo 'extension=oci8.so' > /etc/php7/conf.d/30-oci8.ini \
   #  Clean up
   apk del php7-pear php7-dev gcc musl-dev && \
@@ -252,7 +244,6 @@ RUN set -eux; \
 ARG INSTALL_MYSQL_CLIENT=false
 RUN if [ ${INSTALL_MYSQL_CLIENT} = true ]; then \
   apk --update add mysql-client \
-  mariadb-connector-c \
   ;fi
 
 # Install FFMPEG:
@@ -309,9 +300,9 @@ RUN if [ ${INSTALL_AMQP} = true ]; then \
     || [ ${IVPLDOCK_PHP_VERSION} = "7.1" ] \
     || [ ${IVPLDOCK_PHP_VERSION} = "7.0" ] \
     || [ ${IVPLDOCK_PHP_VERSION} = "5.6" ]; then \
-    printf "\n" | pecl install amqp-1.11.0; \
+    (printf "\n" | pecl install amqp-1.11.0 || true); \
   else \
-    printf "\n" | pecl install amqp; \
+    (printf "\n" | pecl install amqp || true); \
   fi && \
     docker-php-ext-enable amqp && \
     apk del -q rabbitmq-c-dev; \
@@ -354,14 +345,14 @@ RUN if [ ${INSTALL_CASSANDRA} = true ]; then \
 
 # Install Phalcon ext
 ARG INSTALL_PHALCON=false
-ARG IVPLDOCK_PHALCON_VERSION
-ENV IVPLDOCK_PHALCON_VERSION ${IVPLDOCK_PHALCON_VERSION}
+ARG LARADOCK_PHALCON_VERSION
+ENV LARADOCK_PHALCON_VERSION ${LARADOCK_PHALCON_VERSION}
 
 RUN if [ "$INSTALL_PHALCON" = true ]; then \
       apk update \
-      && pecl channel-update pecl.php.net \
+      && (pecl channel-update pecl.php.net || true) \
       && apk add --no-cache libpcre32 \
-      && pecl install phalcon-${IVPLDOCK_PHALCON_VERSION}; \
+      && pecl install phalcon-${LARADOCK_PHALCON_VERSION}; \
       docker-php-ext-enable phalcon; \
       php -m | grep -q 'phalcon' \
     ;fi
@@ -371,9 +362,9 @@ ARG INSTALL_APCU=false
 
 RUN if [ ${INSTALL_APCU} = true ]; then \
     if [ $(php -r "echo PHP_MAJOR_VERSION;") = "5" ]; then \
-        pecl install -a apcu-4.0.11; \
+        (pecl install -a apcu-4.0.11 || true); \
     else \
-        pecl install apcu; \
+        (pecl install apcu || true); \
     fi && \
     docker-php-ext-enable apcu \
 ;fi
@@ -388,13 +379,9 @@ ARG INSTALL_REDIS=false
 RUN if [ ${INSTALL_REDIS} = true ]; then \
   # Install Redis Extension
   if [ $(php -r "echo PHP_MAJOR_VERSION;") = "5" ]; then \
-  printf "\n" | pecl install -o -f redis-4.3.0; \
-  elif [ $(php -r "echo PHP_MAJOR_VERSION;") = "7" ] && { [ $(php -r "echo PHP_MINOR_VERSION;") = "0" ] || [ $(php -r "echo PHP_MINOR_VERSION;") = "1" ] ;}; then \
-  printf "\n" | pecl install -o -f redis-5.3.7; \
-  elif [ $(php -r "echo PHP_MAJOR_VERSION;") = "7" ] && { [ $(php -r "echo PHP_MINOR_VERSION;") = "2" ] || [ $(php -r "echo PHP_MINOR_VERSION;") = "3" ] ;}; then \
-  printf "\n" | pecl install -o -f redis-6.0.2; \
+  (printf "\n" | pecl install -o -f redis-4.3.0 || true); \
   else \
-  printf "\n" | pecl install -o -f redis; \
+  (printf "\n" | pecl install -o -f redis || true); \
   fi; \
   rm -rf /tmp/pear; \
   docker-php-ext-enable redis \
@@ -410,17 +397,15 @@ RUN set -eux; \
   if [ ${INSTALL_SWOOLE} = true ]; then \
     # Install Php Swoole Extension
     if   [ $(php -r "echo PHP_VERSION_ID - PHP_RELEASE_VERSION;") = "50600" ]; then \
-      pecl install swoole-2.0.10; \
+      (pecl install swoole-2.0.10 || true); \
     elif [ $(php -r "echo PHP_VERSION_ID - PHP_RELEASE_VERSION;") = "70000" ]; then \
-      pecl install swoole-4.3.5; \
+      (pecl install swoole-4.3.5 || true); \
     elif [ $(php -r "echo PHP_VERSION_ID - PHP_RELEASE_VERSION;") = "70100" ]; then \
-      pecl install swoole-4.5.11; \
+      (pecl install swoole-4.5.11 || true); \
     elif [ $(php -r "echo PHP_MAJOR_VERSION;") = "7" ]; then \
-      pecl install swoole-4.8.12; \
-    elif [ $(php -r "echo PHP_MAJOR_VERSION;") = "8" ] && [ $(php -r "echo PHP_MINOR_VERSION;") = "0" ]; then \
-      pecl install swoole-5.1.2; \
+      (pecl install swoole-4.8.12 || true); \
     else \
-      pecl install swoole; \
+      (pecl install swoole || true); \
     fi; \
     docker-php-ext-enable swoole; \
     php -m | grep -oiE '^swoole$'; \
@@ -436,7 +421,7 @@ RUN set -eux; \
     if [ ${INSTALL_XLSWRITER} = true ]; then \
       # Install Php xlswriter Extension \
       if   [ $(php -r "echo PHP_MAJOR_VERSION;") != "5" ]; then \
-          pecl install xlswriter && \
+          (pecl install xlswriter || true) && \
           docker-php-ext-enable xlswriter && \
           php -m | grep -q 'xlswriter'; \
       else \
@@ -453,7 +438,7 @@ ARG INSTALL_TAINT=false
 RUN if [ ${INSTALL_TAINT} = true ]; then \
   # Install Php TAINT Extension
   if [ $(php -r "echo PHP_MAJOR_VERSION;") = "7" ]; then \
-  pecl install taint; \
+  (pecl install taint || true); \
   docker-php-ext-enable taint; \
   php -m | grep -q 'taint'; \
   else \
@@ -467,9 +452,7 @@ RUN if [ ${INSTALL_TAINT} = true ]; then \
 
 ARG INSTALL_IMAP=false
 
-RUN if [ ${INSTALL_IMAP} = true ] \
-  && [ "$IVPLDOCK_PHP_VERSION" != "8.4" ] \
-  && [ "$IVPLDOCK_PHP_VERSION" != "8.5" ]; then \
+RUN if [ ${INSTALL_IMAP} = true ]; then \
   apk add --update imap-dev && \
   docker-php-ext-configure imap --with-imap --with-imap-ssl && \
   docker-php-ext-install imap \
@@ -483,7 +466,7 @@ ARG INSTALL_XMLRPC=false
 
 RUN if [ ${INSTALL_XMLRPC} = true ]; then \
   if [ $(php -r "echo PHP_MAJOR_VERSION;") = "8" ]; then \
-  pecl install xmlrpc-1.0.0RC3; \
+  (pecl install xmlrpc-1.0.0RC3 || true); \
   docker-php-ext-enable xmlrpc; \
   else \
   docker-php-ext-install xmlrpc; \
@@ -639,16 +622,6 @@ RUN set -eux; \
       php -m  | grep -q 'event' \
 ;fi
 
-###########################################################################
-# GraphViz extension
-###########################################################################
-
-ARG INSTALL_GRAPHVIZ=false
-
-RUN if [ ${INSTALL_GRAPHVIZ} = true ]; then \
-    apk add --update --no-cache graphviz \
-;fi
-
 #
 #--------------------------------------------------------------------------
 # Optional Supervisord Configuration
@@ -658,7 +631,32 @@ RUN if [ ${INSTALL_GRAPHVIZ} = true ]; then \
 # Make sure you rebuild your container with every change.
 #
 
-COPY supervisord.conf /etc/supervisord.conf
+COPY php-worker/supervisord.conf /etc/supervisord.conf
+
+# Add InvoicePlane banner to bash profile
+COPY invoiceplane-banner.sh /root/invoiceplane-banner.sh
+RUN sed -i 's/\r//g' /root/invoiceplane-banner.sh && \
+    chmod +x /root/invoiceplane-banner.sh && \
+    echo "" >> /root/.bashrc && \
+    echo "# Set container type for banner" >> /root/.bashrc && \
+    echo "export CONTAINER_TYPE='PHP Worker Container'" >> /root/.bashrc && \
+    echo "# Load InvoicePlane Banner" >> /root/.bashrc && \
+    echo "if [ -f ~/invoiceplane-banner.sh ]; then" >> /root/.bashrc && \
+    echo "    source ~/invoiceplane-banner.sh" >> /root/.bashrc && \
+    echo "fi" >> /root/.bashrc && \
+    # Also add banner for laradock user \
+    cp /root/invoiceplane-banner.sh /home/laradock/invoiceplane-banner.sh && \
+    chown laradock:laradock /home/laradock/invoiceplane-banner.sh && \
+    chmod +x /home/laradock/invoiceplane-banner.sh && \
+    touch /home/laradock/.bashrc && \
+    chown laradock:laradock /home/laradock/.bashrc && \
+    echo "" >> /home/laradock/.bashrc && \
+    echo "# Set container type for banner" >> /home/laradock/.bashrc && \
+    echo "export CONTAINER_TYPE='PHP Worker Container'" >> /home/laradock/.bashrc && \
+    echo "# Load InvoicePlane Banner" >> /home/laradock/.bashrc && \
+    echo "if [ -f ~/invoiceplane-banner.sh ]; then" >> /home/laradock/.bashrc && \
+    echo "    source ~/invoiceplane-banner.sh" >> /home/laradock/.bashrc && \
+    echo "fi" >> /home/laradock/.bashrc
 
 ENTRYPOINT ["/usr/bin/supervisord", "-n", "-c",  "/etc/supervisord.conf"]
 
@@ -677,18 +675,7 @@ ENTRYPOINT ["/usr/bin/supervisord", "-n", "-c",  "/etc/supervisord.conf"]
 #--------------------------------------------------------------------------
 #
 
-###########################################################################
-# Set Timezone
-###########################################################################
-
-ARG TZ=UTC
-ENV TZ ${TZ}
-
-RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
-
-###########################################################################
-
-RUN php -v | head -n 1 | grep -q "PHP ${PHP_VERSION}."
+RUN php -v | head -n 1 | grep -q "PHP ${IVPLDOCK_PHP_VERSION}."
 
 #
 #--------------------------------------------------------------------------
@@ -697,6 +684,7 @@ RUN php -v | head -n 1 | grep -q "PHP ${PHP_VERSION}."
 #
 
 # Clean up
-RUN rm /var/cache/apk/*
+RUN rm /var/cache/apk/* \
+  && mkdir -p /var/www/projects
 
 WORKDIR /etc/supervisor/conf.d/

@@ -25,19 +25,10 @@ $i = 0;
  */
 $i++;
 /* Authentication type */
-if ($_SERVER['REMOTE_ADDR'] !== '127.0.0.1') {
-    $cfg['Servers'][$i]['auth_type'] = 'cookie';
-} else {
-    $cfg['Servers'][$i]['auth_type'] = 'config';
-    $cfg['Servers'][$i]['user'] = 'root';
-    $cfg['Servers'][$i]['password'] = 'your-root-password';
-}
-
+$cfg['Servers'][$i]['auth_type'] = 'cookie';
 /* Server parameters */
 $cfg['Servers'][$i]['host'] = 'mariadb';
 $cfg['Servers'][$i]['connect_type'] = 'tcp';
-$cfg['Servers'][$i]['verbose'] = 'mariadb';
-$cfg['ServerDefault'] = 1;
 $cfg['Servers'][$i]['AllowArbitraryServer'] = false;
 $cfg['Servers'][$i]['compress'] = false;
 $cfg['Servers'][$i]['AllowNoPassword'] = false;
