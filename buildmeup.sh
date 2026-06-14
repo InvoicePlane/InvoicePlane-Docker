@@ -1,26 +1,27 @@
 #!/bin/bash
-set -e
+set -euo pipefail
 
-check_and_create_volumes() {
-  VOLUME_NAME=$1
-  if [ -z "$(docker volume ls -q -f name=^${VOLUME_NAME}$)" ]; then
-    echo "External volume '${VOLUME_NAME}' not found. Creating it now..."
-    docker volume create "${VOLUME_NAME}"
-  else
-    echo "External volume '${VOLUME_NAME}' already exists."
-  fi
-}
+# Build and start all services with docker-compose
+# This script will build images and start containers in foreground mode
 
-check_and_create_volumes ivpldock_redis
-check_and_create_volumes ivpldock_mariadb
+# Check if .env.docker exists
+if [ ! -f .env.docker ]; then
+    echo "Error: .env.docker file not found!"
+    echo "Please create it from .env.example: cp .env.example .env.docker"
+    exit 1
+fi
 
-COMPOSE_DOCKER_CLI_BUILD=1 DOCKER_BUILDKIT=1 \
+echo "Building and starting services..."
 docker-compose --env-file .env.docker up \
-  --build \
-  mariadb \
-  nginx \
-  php-fpm \
-  php-worker \
-  phpmyadmin \
-  redis \
-  workspace
+    beanstalkd \
+    beanstalkd-console \
+    mariadb \
+    nginx \
+    php-fpm \
+    php-worker \
+    phpmyadmin \
+    redis \
+    workspace \
+    --build
+
+echo "Services stopped."

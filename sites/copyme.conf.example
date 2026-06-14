@@ -2,7 +2,7 @@ server {
 
     listen 80;
 
-    server_name copyme.test;
+    server_name copyme.local;
     root /var/www/projects/copyme/public;
     index index.php index.html index.htm;
 
@@ -31,6 +31,6 @@ server {
         log_not_found off;
     }
 
-    access_log /var/log/nginx/copyme_access.log;
     error_log /var/log/nginx/copyme_error.log;
+    access_log /var/log/nginx/copyme_access.log;
 }

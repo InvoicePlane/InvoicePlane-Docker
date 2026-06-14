@@ -1,8 +1,1 @@
 .env.docker
-.git
-node_modules
-vendor
-storage
-tmp
-.env
-*.log
