@@ -30,3 +30,5 @@ docker-compose.custom.yml
 .docker/workspace/Dockerfile-gemini
 .docker/workspace/Dockerfile.orig
 .docker/workspace/Dockerfile.*
+SESSION_RECAP.md
+.env.example.*
