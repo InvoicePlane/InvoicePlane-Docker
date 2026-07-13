@@ -26,3 +26,5 @@
 docker-compose.custom.yml
 
 .DS_Store
+.docker/workspace/Dockerfile.bckp
+.docker/workspace/Dockerfile-gemini
