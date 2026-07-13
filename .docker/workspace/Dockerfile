@@ -468,7 +468,11 @@ ARG INSTALL_AMQP=false
 
 RUN if [ ${INSTALL_AMQP} = true ]; then \
     apt-get install -yqq librabbitmq-dev && \
-    if [ ${IVPLDOCK_PHP_VERSION} = "7.3" ] || [ ${IVPLDOCK_PHP_VERSION} = "7.2" ] || [ ${IVPLDOCK_PHP_VERSION} = "7.1" ] || [ ${IVPLDOCK_PHP_VERSION} = "7.0" ] || [ ${IVPLDOCK_PHP_VERSION} = "5.6" ]; then \
+    if [ ${IVPLDOCK_PHP_VERSION} = "7.3" ] \
+      || [ ${IVPLDOCK_PHP_VERSION} = "7.2" ] \
+      || [ ${IVPLDOCK_PHP_VERSION} = "7.1" ] \
+      || [ ${IVPLDOCK_PHP_VERSION} = "7.0" ] \
+      || [ ${IVPLDOCK_PHP_VERSION} = "5.6" ]; then \
       printf "\n" | pecl install amqp-1.11.0; \
     else \
       printf "\n" | pecl install amqp; \
@@ -582,7 +586,118 @@ RUN set -eux; \
       fi \
     fi
 
-# Final Cleanup
+USER ivpldock
+
+###########################################################################
+# Node / NVM:
+###########################################################################
+
+# Check if NVM needs to be installed
+ARG NODE_VERSION=node
+ENV NODE_VERSION ${NODE_VERSION}
+ARG INSTALL_NODE=false
+ARG INSTALL_NPM_GULP=false
+ARG INSTALL_NPM_BOWER=false
+ARG INSTALL_NPM_VUE_CLI=false
+ARG INSTALL_NPM_ANGULAR_CLI=false
+ARG INSTALL_NPM_CHECK_UPDATES_CLI=false
+ARG NPM_REGISTRY
+ENV NPM_REGISTRY ${NPM_REGISTRY}
+ARG NPM_FETCH_RETRIES
+ENV NPM_FETCH_RETRIES ${NPM_FETCH_RETRIES}
+ARG NPM_FETCH_RETRY_FACTOR
+ENV NPM_FETCH_RETRY_FACTOR ${NPM_FETCH_RETRY_FACTOR}
+ARG NPM_FETCH_RETRY_MINTIMEOUT
+ENV NPM_FETCH_RETRY_MINTIMEOUT ${NPM_FETCH_RETRY_MINTIMEOUT}
+ARG NPM_FETCH_RETRY_MAXTIMEOUT
+ENV NPM_FETCH_RETRY_MAXTIMEOUT ${NPM_FETCH_RETRY_MAXTIMEOUT}
+
+ENV NVM_DIR /home/ivpldock/.nvm
+ARG NVM_NODEJS_ORG_MIRROR
+ENV NVM_NODEJS_ORG_MIRROR ${NVM_NODEJS_ORG_MIRROR}
+
+RUN echo "Forcing cache bust for custom NVM setup" && \
+if [ ${INSTALL_NODE} = true ]; then \
+    if [ -s "$NVM_DIR/nvm.sh" ]; then \
+        . "$NVM_DIR/nvm.sh"; \
+        # Install all concurrent target versions \
+        for version in 18 20 22 24; do \
+            nvm install $version; \
+        done; \
+        # Enforce Node 22 as default fallback standard \
+        nvm use 22; \
+        nvm alias default 22; \
+        # Safely link core tools from default active target \
+        NODE_MODS_DIR="$(nvm which default | sed -r 's/\/bin\/node//')/lib/node_modules"; \
+        if [ -f "$NODE_MODS_DIR/gulp/bin/gulp.js" ]; then ln -sf $NODE_MODS_DIR/gulp/bin/gulp.js /usr/local/bin/gulp; fi; \
+        if [ -f "$NODE_MODS_DIR/npm/bin/npm-cli.js" ]; then ln -sf $NODE_MODS_DIR/npm/bin/npm-cli.js /usr/local/bin/npm; fi; \
+        if [ -f "$NODE_MODS_DIR/npm/bin/npx-cli.js" ]; then ln -sf $NODE_MODS_DIR/npm/bin/npx-cli.js /usr/local/bin/npx; fi; \
+    fi; \
+fi; \
+true
+
+# Wouldn't execute successfully if variables are empty and we don't use double quotes
+RUN if [ ${INSTALL_NODE} = true ]; then \
+    if [ -s "$NVM_DIR/nvm.sh" ]; then \
+        . "$NVM_DIR/nvm.sh"; \
+        # Install your requested concurrent versions \
+        for version in 18 20 22 24; do \
+            nvm install $version; \
+        done; \
+        # Explicitly enforce Node 22 as your system default \
+        nvm use 22; \
+        nvm alias default 22; \
+        # Cleanly map system binaries for your active default version \
+        NODE_MODS_DIR="$(nvm which default | sed -r 's/\/bin\/node//')/lib/node_modules"; \
+        if [ -f "$NODE_MODS_DIR/gulp/bin/gulp.js" ]; then ln -sf $NODE_MODS_DIR/gulp/bin/gulp.js /usr/local/bin/gulp; fi; \
+        if [ -f "$NODE_MODS_DIR/npm/bin/npm-cli.js" ]; then ln -sf $NODE_MODS_DIR/npm/bin/npm-cli.js /usr/local/bin/npm; fi; \
+        if [ -f "$NODE_MODS_DIR/npm/bin/npx-cli.js" ]; then ln -sf $NODE_MODS_DIR/npm/bin/npx-cli.js /usr/local/bin/npx; fi; \
+    fi; \
+fi; \
+true
+
+RUN if [ ${NPM_REGISTRY} ]; then \
+    . ~/.bashrc && npm config set registry ${NPM_REGISTRY} \
+;fi
+
+# Mount .npmrc into home folder
+COPY ./.npmrc /root/.npmrc
+COPY ./.npmrc /home/ivpldock/.npmrc
+
+###########################################################################
+# YARN:
+###########################################################################
+
+USER ivpldock
+
+ARG INSTALL_YARN=false
+ARG YARN_VERSION=latest
+ENV YARN_VERSION ${YARN_VERSION}
+
+RUN if [ ${INSTALL_YARN} = true ]; then \
+    if [ -s "$NVM_DIR/nvm.sh" ]; then \
+        . "$NVM_DIR/nvm.sh"; \
+        # Enable corepack which comes built-in with Node \
+        corepack enable; \
+        # Set the global Yarn version you want active (e.g., stable, classic, or specific versions like 4.x) \
+        if [ "${YARN_VERSION}" = "latest" ]; then \
+            corepack prepare yarn@stable --activate; \
+        else \
+            corepack prepare yarn@${YARN_VERSION} --activate; \
+        fi; \
+    fi; \
+fi; \
+true
+
+#
+#--------------------------------------------------------------------------
+# Final Touch
+#--------------------------------------------------------------------------
+#
+
+USER root
+
+# Clean up
 RUN apt-get clean && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* && \
     rm -f /var/log/lastlog /var/log/faillog
