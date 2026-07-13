@@ -52,20 +52,29 @@ ARG WORKSPACE_ALLOW_RELEASE_INFO_CHANGE=false
 ENV WORKSPACE_ALLOW_RELEASE_INFO_CHANGE ${WORKSPACE_ALLOW_RELEASE_INFO_CHANGE}
 
 # Step 1: Handle User and Directory Setup Safely
-RUN set +e; \
-    if ! getent group ivpldock > /dev/null; then \
-      groupadd -g ${PGID} ivpldock || groupadd ivpldock; \
-    fi; \
-    if ! getent passwd ivpldock > /dev/null; then \
-      useradd -l -u ${PUID} -g ivpldock -m ivpldock || useradd -l -g ivpldock -m ivpldock; \
-    fi; \
-    if getent group docker_env > /dev/null; then \
+# CRITICAL: Ensure ivpldock user has the correct PUID/PGID to match host user
+RUN set -e; \
+    echo "Removing any user with UID=${PUID} and ivpldock user..."; \
+    getent passwd ${PUID} | cut -d: -f1 | xargs -r userdel -rf; \
+    userdel -rf ivpldock 2>/dev/null || true; \
+    \
+    echo "Removing ivpldock group and any group with GID=${PGID}..."; \
+    getent group ${PGID} | grep -v "^ivpldock" | cut -d: -f1 | xargs -r groupdel || true; \
+    groupdel ivpldock 2>/dev/null || true; \
+    \
+    echo "Creating fresh ivpldock with UID=${PUID} GID=${PGID}..."; \
+    groupadd -g ${PGID} ivpldock; \
+    useradd -l -m -u ${PUID} -g ${PGID} ivpldock; \
+    \
+    if getent group docker_env > /dev/null 2>&1; then \
       usermod -aG docker_env ivpldock; \
     fi; \
+    \
     usermod -p "*" ivpldock -s /bin/bash; \
     mkdir -p /home/ivpldock; \
-    chown -R ivpldock:ivpldock /home/ivpldock; \
-    true
+    chown -R ${PUID}:${PGID} /home/ivpldock; \
+    \
+    echo "✓ User setup complete. ivpldock: UID=$(id -u ivpldock) GID=$(id -g ivpldock)"
 
 # Step 2: Volatile System Package Installation Block
 RUN export DEBIAN_FRONTEND=noninteractive; \
@@ -586,11 +595,18 @@ RUN set -eux; \
       fi \
     fi
 
-USER ivpldock
-
 ###########################################################################
 # Node / NVM:
 ###########################################################################
+
+# Install build dependencies required for Node compilation
+USER root
+
+RUN apt-get update && \
+    apt-get install -yqq curl && \
+    true
+
+USER ivpldock
 
 # Check if NVM needs to be installed
 ARG NODE_VERSION=node
@@ -616,43 +632,32 @@ ENV NVM_DIR /home/ivpldock/.nvm
 ARG NVM_NODEJS_ORG_MIRROR
 ENV NVM_NODEJS_ORG_MIRROR ${NVM_NODEJS_ORG_MIRROR}
 
-RUN echo "Forcing cache bust for custom NVM setup" && \
-if [ ${INSTALL_NODE} = true ]; then \
-    if [ -s "$NVM_DIR/nvm.sh" ]; then \
-        . "$NVM_DIR/nvm.sh"; \
-        # Install all concurrent target versions \
-        for version in 18 20 22 24; do \
-            nvm install $version; \
-        done; \
-        # Enforce Node 22 as default fallback standard \
-        nvm use 22; \
-        nvm alias default 22; \
-        # Safely link core tools from default active target \
-        NODE_MODS_DIR="$(nvm which default | sed -r 's/\/bin\/node//')/lib/node_modules"; \
-        if [ -f "$NODE_MODS_DIR/gulp/bin/gulp.js" ]; then ln -sf $NODE_MODS_DIR/gulp/bin/gulp.js /usr/local/bin/gulp; fi; \
-        if [ -f "$NODE_MODS_DIR/npm/bin/npm-cli.js" ]; then ln -sf $NODE_MODS_DIR/npm/bin/npm-cli.js /usr/local/bin/npm; fi; \
-        if [ -f "$NODE_MODS_DIR/npm/bin/npx-cli.js" ]; then ln -sf $NODE_MODS_DIR/npm/bin/npx-cli.js /usr/local/bin/npx; fi; \
-    fi; \
-fi; \
-true
-
-# Wouldn't execute successfully if variables are empty and we don't use double quotes
+# CRITICAL: Install NVM if INSTALL_NODE is true. Base image does not include NVM.
 RUN if [ ${INSTALL_NODE} = true ]; then \
-    if [ -s "$NVM_DIR/nvm.sh" ]; then \
-        . "$NVM_DIR/nvm.sh"; \
-        # Install your requested concurrent versions \
-        for version in 18 20 22 24; do \
-            nvm install $version; \
-        done; \
-        # Explicitly enforce Node 22 as your system default \
-        nvm use 22; \
-        nvm alias default 22; \
-        # Cleanly map system binaries for your active default version \
-        NODE_MODS_DIR="$(nvm which default | sed -r 's/\/bin\/node//')/lib/node_modules"; \
-        if [ -f "$NODE_MODS_DIR/gulp/bin/gulp.js" ]; then ln -sf $NODE_MODS_DIR/gulp/bin/gulp.js /usr/local/bin/gulp; fi; \
-        if [ -f "$NODE_MODS_DIR/npm/bin/npm-cli.js" ]; then ln -sf $NODE_MODS_DIR/npm/bin/npm-cli.js /usr/local/bin/npm; fi; \
-        if [ -f "$NODE_MODS_DIR/npm/bin/npx-cli.js" ]; then ln -sf $NODE_MODS_DIR/npm/bin/npx-cli.js /usr/local/bin/npx; fi; \
-    fi; \
+    echo "Installing NVM..." && \
+    mkdir -p $NVM_DIR && \
+    curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash && \
+    . "$NVM_DIR/nvm.sh" && \
+    echo "NVM installed successfully. Installing Node versions..." && \
+    for version in 18 20 22 24; do \
+        echo "Installing Node $version..." && \
+        nvm install $version && \
+        npm install -g npm@latest; \
+    done && \
+    nvm use 22 && \
+    nvm alias default 22 && \
+    echo "Node setup complete. Creating symlinks for global access..." && \
+    NODE_MODS_DIR="$(nvm which default | sed -r 's/\/bin\/node//')/lib/node_modules" && \
+    ln -sf "$(nvm which default)" /usr/local/bin/node && \
+    ln -sf "$(nvm which default | sed -r 's/\/bin\/node//')/bin/npm" /usr/local/bin/npm && \
+    ln -sf "$(nvm which default | sed -r 's/\/bin\/node//')/bin/npx" /usr/local/bin/npx && \
+    npm --version && \
+    node --version && \
+    echo "" >> /home/ivpldock/.bashrc && \
+    echo "# Load NVM" >> /home/ivpldock/.bashrc && \
+    echo "export NVM_DIR=\"/home/ivpldock/.nvm\"" >> /home/ivpldock/.bashrc && \
+    echo "[ -s \"\$NVM_DIR/nvm.sh\" ] && \\. \"\$NVM_DIR/nvm.sh\"" >> /home/ivpldock/.bashrc && \
+    echo "[ -s \"\$NVM_DIR/bash_completion\" ] && \\. \"\$NVM_DIR/bash_completion\"" >> /home/ivpldock/.bashrc; \
 fi; \
 true
 
@@ -675,19 +680,40 @@ ARG YARN_VERSION=latest
 ENV YARN_VERSION ${YARN_VERSION}
 
 RUN if [ ${INSTALL_YARN} = true ]; then \
-    if [ -s "$NVM_DIR/nvm.sh" ]; then \
-        . "$NVM_DIR/nvm.sh"; \
-        # Enable corepack which comes built-in with Node \
-        corepack enable; \
-        # Set the global Yarn version you want active (e.g., stable, classic, or specific versions like 4.x) \
-        if [ "${YARN_VERSION}" = "latest" ]; then \
-            corepack prepare yarn@stable --activate; \
-        else \
-            corepack prepare yarn@${YARN_VERSION} --activate; \
-        fi; \
-    fi; \
+    . "$NVM_DIR/nvm.sh" && \
+    echo "Setting up Yarn..." && \
+    corepack enable && \
+    if [ "${YARN_VERSION}" = "latest" ]; then \
+        corepack prepare yarn@stable --activate; \
+    else \
+        corepack prepare yarn@${YARN_VERSION} --activate; \
+    fi && \
+    yarn --version; \
 fi; \
 true
+
+# Make yarn/npm/node available globally (as root and all users) by creating symlinks with proper permissions
+USER root
+
+RUN if [ ${INSTALL_NODE} = true ]; then \
+    NODE_PATH="/home/ivpldock/.nvm/versions/node/$(ls -t /home/ivpldock/.nvm/versions/node | head -1)/bin" && \
+    ln -sf "$NODE_PATH/node" /usr/local/bin/node && \
+    ln -sf "$NODE_PATH/npm" /usr/local/bin/npm && \
+    ln -sf "$NODE_PATH/npx" /usr/local/bin/npx && \
+    chmod +x /usr/local/bin/node /usr/local/bin/npm /usr/local/bin/npx && \
+    node --version && \
+    npm --version; \
+fi
+
+RUN if [ ${INSTALL_YARN} = true ]; then \
+    . "/home/ivpldock/.nvm/nvm.sh" && \
+    YARN_BIN=$(which yarn || echo "") && \
+    if [ -n "$YARN_BIN" ]; then \
+        ln -sf "$YARN_BIN" /usr/local/bin/yarn && \
+        chmod +x /usr/local/bin/yarn && \
+        /usr/local/bin/yarn --version; \
+    fi; \
+fi
 
 #
 #--------------------------------------------------------------------------

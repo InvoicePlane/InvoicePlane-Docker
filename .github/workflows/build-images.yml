@@ -1,0 +1,143 @@
+name: Build & Test Docker Images
+
+on:
+  push:
+    branches: [ master, develop ]
+    paths:
+      - '.docker/**'
+      - '.env.docker'
+      - 'docker-compose.yml'
+      - '.github/workflows/build-images.yml'
+  pull_request:
+    branches: [ master, develop ]
+    paths:
+      - '.docker/**'
+      - '.env.docker'
+      - 'docker-compose.yml'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        php-version: ['8.2', '8.3', '8.4']
+      fail-fast: false
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build workspace image (PHP ${{ matrix.php-version }})
+        run: |
+          docker-compose \
+            --env-file .env.docker \
+            -e PHP_VERSION=${{ matrix.php-version }} \
+            build --no-cache workspace
+        timeout-minutes: 45
+
+      - name: Test workspace image
+        run: |
+          docker-compose \
+            --env-file .env.docker \
+            -e PHP_VERSION=${{ matrix.php-version }} \
+            up -d workspace
+
+          sleep 3
+
+          docker-compose \
+            --env-file .env.docker \
+            exec -T workspace bash -c "
+              echo '=== PHP Version ===' && \
+              php -v && \
+              echo '=== Node Version ===' && \
+              node --version && \
+              echo '=== Yarn Version ===' && \
+              yarn --version && \
+              echo '=== Npm Version ===' && \
+              npm --version && \
+              echo '=== Workspace User ===' && \
+              id && \
+              echo '=== All checks passed! ===' \
+            "
+        timeout-minutes: 10
+
+      - name: Cleanup
+        if: always()
+        run: |
+          docker-compose --env-file .env.docker down -v
+
+  build-php-fpm:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        php-version: ['8.2', '8.3', '8.4']
+      fail-fast: false
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build php-fpm image (PHP ${{ matrix.php-version }})
+        run: |
+          docker-compose \
+            --env-file .env.docker \
+            -e PHP_VERSION=${{ matrix.php-version }} \
+            build --no-cache php-fpm
+        timeout-minutes: 30
+
+      - name: Test php-fpm image
+        run: |
+          docker-compose \
+            --env-file .env.docker \
+            -e PHP_VERSION=${{ matrix.php-version }} \
+            up -d php-fpm
+
+          sleep 2
+
+          docker-compose \
+            --env-file .env.docker \
+            exec -T php-fpm php -v
+        timeout-minutes: 10
+
+      - name: Cleanup
+        if: always()
+        run: |
+          docker-compose --env-file .env.docker down -v
+
+  build-nginx:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build nginx image
+        run: |
+          docker-compose \
+            --env-file .env.docker \
+            build --no-cache nginx
+        timeout-minutes: 15
+
+      - name: Test nginx image
+        run: |
+          docker-compose \
+            --env-file .env.docker \
+            up -d nginx
+
+          sleep 2
+
+          docker-compose \
+            --env-file .env.docker \
+            exec -T nginx nginx -v
+        timeout-minutes: 10
+
+      - name: Cleanup
+        if: always()
+        run: |
+          docker-compose --env-file .env.docker down -v

@@ -29,3 +29,4 @@ docker-compose.custom.yml
 .docker/workspace/Dockerfile.bckp
 .docker/workspace/Dockerfile-gemini
 .docker/workspace/Dockerfile.orig
+.docker/workspace/Dockerfile.*
