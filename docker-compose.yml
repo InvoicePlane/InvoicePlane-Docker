@@ -477,7 +477,7 @@ services:
           - http_proxy
           - https_proxy
           - no_proxy
-          - MARIADB_VERSION=${MARIADB_VERSION}
+          - MARIADB_VERSION=10.11
       volumes:
         - ${DATA_PATH_HOST}/mariadb:/var/lib/mysql
         - ${MARIADB_ENTRYPOINT_INITDB}:/docker-entrypoint-initdb.d
