@@ -1,1 +1,3 @@
-* * * * * laradock /usr/bin/php /var/www/artisan schedule:run >> /dev/null 2>&1
+# InvoicePlane-Docker does not provide the Laravel `laradock` user or an
+# `/var/www/artisan` entry point. Keep this legacy example disabled so cron
+# does not reject the entire file at container startup.
