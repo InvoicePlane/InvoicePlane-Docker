@@ -87,6 +87,7 @@ RUN export DEBIAN_FRONTEND=noninteractive; \
     pecl channel-update pecl.php.net || true; \
     apt-get install -y --no-install-recommends apt-utils libzip-dev zip unzip nasm || echo "Core packages skipped"; \
     apt-get install -y --no-install-recommends php${IVPLDOCK_PHP_VERSION}-zip || echo "PHP zip extension skipped"; \
+    apt-get install -y --no-install-recommends php${IVPLDOCK_PHP_VERSION}-intl || echo "PHP intl extension skipped"; \
     true
 
 #
