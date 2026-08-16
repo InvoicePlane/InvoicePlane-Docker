@@ -66,6 +66,7 @@ services:
 ### PHP-FPM ##############################################
     php-fpm:
       restart: always
+      user: '${WORKSPACE_PUID}:${WORKSPACE_PGID}'
       build:
         context: ./.docker/php-fpm
         args:
@@ -113,6 +114,7 @@ services:
 ### PHP Worker ############################################
     php-worker:
       restart: always
+      user: '${WORKSPACE_PUID}:${WORKSPACE_PGID}'
       build:
         context: ./.docker/php-worker
         args:
@@ -164,6 +166,7 @@ services:
 ### MySQL ################################################
     mariadb:
       restart: always
+      user: '${WORKSPACE_PUID}:${WORKSPACE_PGID}'
       build:
         context: ./.docker/mariadb
         args:
