@@ -21,7 +21,7 @@ docker-compose --env-file .env.docker up \
   mariadb \
   nginx \
   php-fpm \
-  php-worker \
+  #php-worker \
   phpmyadmin \
   redis \
   workspace

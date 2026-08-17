@@ -112,28 +112,28 @@ services:
         - docker-in-docker
 
 ### PHP Worker ############################################
-    php-worker:
-      restart: always
-      user: '${WORKSPACE_PUID}:${WORKSPACE_PGID}'
-      build:
-        context: ./.docker/php-worker
-        args:
-          - CHANGE_SOURCE=${CHANGE_SOURCE}
-          - IVPLDOCK_PHP_VERSION=${PHP_VERSION}
-          - INSTALL_INTL=${PHP_WORKER_INSTALL_INTL}
-          - PUID=${PHP_WORKER_PUID}
-          - PGID=${PHP_WORKER_PGID}
-      volumes:
-        - ${APP_CODE_PATH_HOST}:${APP_CODE_PATH_CONTAINER}${APP_CODE_CONTAINER_FLAG}
-        - ./.docker/php-worker/supervisord.d:/etc/supervisord.d
-      depends_on:
-        - workspace
-      environment:
-          - TZ=${WORKSPACE_TIMEZONE}
-      extra_hosts:
-        - "dockerhost:${DOCKER_HOST_IP}"
-      networks:
-        - backend
+    # php-worker:
+    #   restart: always
+    #   user: '${WORKSPACE_PUID}:${WORKSPACE_PGID}'
+    #   build:
+    #     context: ./.docker/php-worker
+    #     args:
+    #       - CHANGE_SOURCE=${CHANGE_SOURCE}
+    #       - IVPLDOCK_PHP_VERSION=${PHP_VERSION}
+    #       - INSTALL_INTL=${PHP_WORKER_INSTALL_INTL}
+    #       - PUID=${PHP_WORKER_PUID}
+    #       - PGID=${PHP_WORKER_PGID}
+    #   volumes:
+    #     - ${APP_CODE_PATH_HOST}:${APP_CODE_PATH_CONTAINER}${APP_CODE_CONTAINER_FLAG}
+    #     - ./.docker/php-worker/supervisord.d:/etc/supervisord.d
+    #   depends_on:
+    #     - workspace
+    #   environment:
+    #       - TZ=${WORKSPACE_TIMEZONE}
+    #   extra_hosts:
+    #     - "dockerhost:${DOCKER_HOST_IP}"
+    #   networks:
+    #     - backend
 
 ### NGINX Server #########################################
     nginx:
