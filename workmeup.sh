@@ -1,2 +1,2 @@
 #!/bin/bash
-docker exec --env-file .env.docker -it --user=ivpldock $(docker ps -aqf "name=workspace") bash
+docker compose --env-file .env.docker exec --user=ivpldock workspace bash

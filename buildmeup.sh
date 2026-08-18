@@ -17,10 +17,12 @@ check_and_create_volumes ivpldock_mariadb
 COMPOSE_DOCKER_CLI_BUILD=1 DOCKER_BUILDKIT=1 \
 docker-compose --env-file .env.docker up \
   --build \
+  beanstalkd \
+  beanstalkd-console \
   mariadb \
   nginx \
   php-fpm \
-  #php-worker \
+  php-worker \
   phpmyadmin \
   redis \
   workspace

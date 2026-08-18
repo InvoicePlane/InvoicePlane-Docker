@@ -44,6 +44,4 @@ server {
         log_not_found off;
     }
 
-    error_log /var/log/nginx/laravel_error.log;
-    access_log /var/log/nginx/laravel_access.log;
 }

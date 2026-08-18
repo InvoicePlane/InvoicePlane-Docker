@@ -31,6 +31,4 @@ server {
         log_not_found off;
     }
 
-    access_log /var/log/nginx/copyme_access.log;
-    error_log /var/log/nginx/copyme_error.log;
 }

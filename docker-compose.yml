@@ -112,28 +112,27 @@ services:
         - docker-in-docker
 
 ### PHP Worker ############################################
-    # php-worker:
-    #   restart: always
-    #   user: '${WORKSPACE_PUID}:${WORKSPACE_PGID}'
-    #   build:
-    #     context: ./.docker/php-worker
-    #     args:
-    #       - CHANGE_SOURCE=${CHANGE_SOURCE}
-    #       - IVPLDOCK_PHP_VERSION=${PHP_VERSION}
-    #       - INSTALL_INTL=${PHP_WORKER_INSTALL_INTL}
-    #       - PUID=${PHP_WORKER_PUID}
-    #       - PGID=${PHP_WORKER_PGID}
-    #   volumes:
-    #     - ${APP_CODE_PATH_HOST}:${APP_CODE_PATH_CONTAINER}${APP_CODE_CONTAINER_FLAG}
-    #     - ./.docker/php-worker/supervisord.d:/etc/supervisord.d
-    #   depends_on:
-    #     - workspace
-    #   environment:
-    #       - TZ=${WORKSPACE_TIMEZONE}
-    #   extra_hosts:
-    #     - "dockerhost:${DOCKER_HOST_IP}"
-    #   networks:
-    #     - backend
+    php-worker:
+      restart: always
+      build:
+        context: ./.docker/php-worker
+        args:
+          - CHANGE_SOURCE=${CHANGE_SOURCE}
+          - IVPLDOCK_PHP_VERSION=${PHP_VERSION}
+          - INSTALL_INTL=${PHP_WORKER_INSTALL_INTL}
+          - PUID=${PHP_WORKER_PUID}
+          - PGID=${PHP_WORKER_PGID}
+      volumes:
+        - ${APP_CODE_PATH_HOST}:${APP_CODE_PATH_CONTAINER}${APP_CODE_CONTAINER_FLAG}
+        - ./.docker/php-worker/supervisord.d:/etc/supervisord.d
+      depends_on:
+        - workspace
+      environment:
+          - TZ=${WORKSPACE_TIMEZONE}
+      extra_hosts:
+        - "dockerhost:${DOCKER_HOST_IP}"
+      networks:
+        - backend
 
 ### NGINX Server #########################################
     nginx:
@@ -172,7 +171,7 @@ services:
           - http_proxy
           - https_proxy
           - no_proxy
-          - MARIADB_VERSION=10.11
+          - MARIADB_VERSION=${MARIADB_VERSION}
       volumes:
         - mariadb:/var/lib/mysql
         - ${MARIADB_ENTRYPOINT_INITDB}:/docker-entrypoint-initdb.d
@@ -187,9 +186,10 @@ services:
       networks:
         - backend
 
-### PostgreSQL ###########################################
+### Redis ################################################
     redis:
       restart: always
+      user: '${WORKSPACE_PUID}:${WORKSPACE_PGID}'
       build: ./.docker/redis
       volumes:
         - ${DATA_PATH_HOST}/redis:/data
@@ -200,7 +200,7 @@ services:
       networks:
         - backend
 
-### Redis Cluster ##########################################
+### Beanstalkd ############################################
     beanstalkd:
       restart: always
       build: ./.docker/beanstalkd
@@ -239,7 +239,7 @@ services:
         - frontend
         - backend
 
-### pgAdmin ##############################################
+### Docker-in-Docker ######################################
     docker-in-docker:
       restart: always
       image: docker:29-dind
@@ -253,5 +253,3 @@ services:
         - 2375
       networks:
         - backend
-
-### REDISWEBUI ################################################

@@ -42,6 +42,4 @@ server {
         log_not_found off;
     }
 
-    error_log /var/log/nginx/node.com.co.local_error.log;
-    access_log /var/log/nginx/node.com.co.local_access.log;
 }

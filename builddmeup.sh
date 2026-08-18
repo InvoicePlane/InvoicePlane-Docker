@@ -13,5 +13,5 @@ check_and_create_volumes() {
 check_and_create_volumes ivpldock_redis
 check_and_create_volumes ivpldock_mariadb
 
-docker-compose --env-file .env.docker up beanstalkd beanstalkd-console mariadb nginx php-fpm phpmyadmin redis workspace --build -d
+docker-compose --env-file .env.docker up beanstalkd beanstalkd-console mariadb nginx php-fpm php-worker phpmyadmin redis workspace --build -d
 
