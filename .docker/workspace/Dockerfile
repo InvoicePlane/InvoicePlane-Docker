@@ -716,6 +716,48 @@ RUN if [ ${INSTALL_YARN} = true ]; then \
     fi; \
 fi
 
+###########################################################################
+# Headless Chromium:
+###########################################################################
+
+USER root
+
+ARG INSTALL_CHROMIUM=false
+
+# Ubuntu 24.04's own `chromium` / `chromium-browser` apt packages are
+# snap-transition stubs: installing them pulls in snapd, which does not run
+# inside a container. Install Google's official Chrome .deb repo instead (a
+# real package, security-updated through `apt-get upgrade`) and expose the
+# binary under the `chromium` / `chromium-browser` / `chrome` names that
+# browser tooling looks for. amd64 only — Google publishes no arm64 .deb.
+#
+# Runtime note: in a container Chrome needs `--no-sandbox` (no user
+# namespaces), and `--headless=new --disable-dev-shm-usage` for CI. Callers
+# pass those themselves; we don't wrap them in so the binary stays generic.
+RUN if [ ${INSTALL_CHROMIUM} = true ]; then \
+      set -eux; \
+      apt-get update; \
+      apt-get install -y --no-install-recommends ca-certificates curl gnupg; \
+      install -d -m 0755 /etc/apt/keyrings; \
+      curl -fsSL https://dl.google.com/linux/linux_signing_key.pub \
+        | gpg --dearmor -o /etc/apt/keyrings/google-chrome.gpg; \
+      echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/google-chrome.gpg] https://dl.google.com/linux/chrome/deb/ stable main" \
+        > /etc/apt/sources.list.d/google-chrome.list; \
+      apt-get update; \
+      apt-get install -y --no-install-recommends google-chrome-stable; \
+      ln -sf /usr/bin/google-chrome-stable /usr/local/bin/chrome; \
+      ln -sf /usr/bin/google-chrome-stable /usr/local/bin/chromium; \
+      ln -sf /usr/bin/google-chrome-stable /usr/local/bin/chromium-browser; \
+      apt-get clean; \
+      rm -rf /var/lib/apt/lists/*; \
+      chromium --version; \
+    fi; \
+    true
+
+# Let test runners that autodetect the browser (karma, puppeteer,
+# lighthouse, symfony/panther, ...) find it without extra config.
+ENV CHROME_BIN=/usr/local/bin/chromium
+
 #
 #--------------------------------------------------------------------------
 # Final Touch

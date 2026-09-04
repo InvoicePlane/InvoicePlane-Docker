@@ -2,14 +2,31 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+**Start with [`AGENTS.md`](AGENTS.md)** — it is the canonical, tool-neutral
+brief on what ivpldock is, the nine-service set, how to run it, the
+permissions model, and the accumulated hard rules. This file adds
+Claude-specific depth on top of it; `.junie/guidelines.md` and
+`.github/copilot-instructions.md` are the equivalents for Junie and Copilot.
+Keep all of them in sync when the service set, scripts, or permissions model
+change.
+
 ## Project Overview
 
-This is a **Docker-based development environment for InvoicePlane**, forked from Laradock. It provides a containerized PHP development stack with support for multiple PHP versions (7.4 through 8.4).
+This is a **Docker Compose development stack for InvoicePlane**, forked and
+heavily slimmed down from Laradock. It is infrastructure, not an
+application: the PHP / MariaDB / Redis / nginx / Beanstalkd layer that
+InvoicePlane and sibling PHP projects under `/data/Projects` run on top of.
+Upstream Laradock ships 90+ optional services; this fork keeps **nine**
+(plus a deliberately-deferred `docker-in-docker`) and has deleted the rest
+from `docker-compose.yml` and `.docker/`. Do not reintroduce a service by
+copying it back from upstream without a concrete need. It supports PHP
+versions 7.4 through 8.4 (target: 8.4); MariaDB is pinned at 10.11 (11 broke
+things).
 
 ### Architecture
 
 **Core Services:**
-- **Workspace**: Utility container for CLI tasks (Composer, Node, npm, yarn)
+- **Workspace**: Utility container for CLI tasks (Composer, Node, npm, yarn, headless Chromium)
 - **PHP-FPM**: Application runtime (configurable PHP version)
 - **Nginx**: Web server with per-site configuration
 - **MariaDB**: Default database (MySQL compatible)
@@ -249,6 +266,25 @@ to start as root.
 - Document the trigger method in comments
 - Xdebug 3 (PHP 8.x): Use `xdebug.start_with_request=trigger`
 - Xdebug 2 (older PHP): Keep `remote_autostart=0`
+
+### Headless Browser (Chromium)
+
+The `workspace` container installs **Google Chrome stable** from Google's
+official apt repo when `WORKSPACE_INSTALL_CHROMIUM=true` (the default),
+symlinked as `chromium` / `chromium-browser` / `chrome` and exported as
+`CHROME_BIN`. Ubuntu 24.04's own `chromium` apt package is a snap-transition
+stub that can't run in a container, which is why it's the Google `.deb`
+(amd64 only — Google publishes no arm64 build).
+
+- Install lives in `.docker/workspace/Dockerfile` under the "Headless
+  Chromium" section, gated on `ARG INSTALL_CHROMIUM`, wired through
+  `docker-compose.yml` (`INSTALL_CHROMIUM=${WORKSPACE_INSTALL_CHROMIUM}`)
+  and both `.env.example` / `.env.docker`.
+- In a container Chrome needs `--no-sandbox` (no user namespaces), plus
+  `--headless=new --disable-dev-shm-usage` for CI. The binary is left
+  generic — callers pass those flags themselves.
+- Verify after a rebuild:
+  `docker compose --env-file .env.docker exec --user=ivpldock workspace chromium --version`
 
 ### Environment Variable Naming
 
