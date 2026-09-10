@@ -758,6 +758,45 @@ RUN if [ ${INSTALL_CHROMIUM} = true ]; then \
 # lighthouse, symfony/panther, ...) find it without extra config.
 ENV CHROME_BIN=/usr/local/bin/chromium
 
+###########################################################################
+# Puppeteer (Node launcher for Spatie Browsershot / headless Chrome):
+###########################################################################
+
+USER root
+
+ARG INSTALL_PUPPETEER=false
+
+# Spatie Browsershot does not talk to Chrome directly: it runs
+# `node vendor/spatie/browsershot/bin/browser.cjs`, and that script does
+# `require('puppeteer')`. The google-chrome-stable binary from the
+# INSTALL_CHROMIUM step above is necessary but NOT sufficient — without the
+# `puppeteer` npm package on the Node resolution path, every Browsershot
+# call fails with `Error: Cannot find module 'puppeteer'` and callers are
+# forced to skip PDF/screenshot tests.
+#
+# Install it once, globally, under the standard /usr/local prefix (a real
+# root-owned dir — no writes into ivpldock's nvm home tree) and put that
+# dir on NODE_PATH below. nvm-built Node does not carry /usr/local in its
+# GLOBAL_FOLDERS list, so the explicit NODE_PATH is what makes
+# `require('puppeteer')` resolve from any project with no per-project
+# `npm install`, including from PHP shelling out to `node` in the PHPUnit
+# suite (which never sources ivpldock's .bashrc).
+#
+# Puppeteer's own bundled-Chromium download is skipped — we point it at the
+# Chrome already installed above so the image carries exactly one browser.
+# `puppeteer.launch()` with no executablePath honours PUPPETEER_EXECUTABLE_PATH.
+ENV PUPPETEER_SKIP_DOWNLOAD=true \
+    PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
+    PUPPETEER_EXECUTABLE_PATH=/usr/local/bin/chromium \
+    NODE_PATH=/usr/local/lib/node_modules
+RUN if [ ${INSTALL_PUPPETEER} = true ]; then \
+      set -eux; \
+      /usr/local/bin/npm install -g --prefix=/usr/local puppeteer; \
+      NODE_PATH=/usr/local/lib/node_modules node -e "require.resolve('puppeteer')"; \
+      /usr/local/bin/chromium --version; \
+    fi; \
+    true
+
 #
 #--------------------------------------------------------------------------
 # Final Touch

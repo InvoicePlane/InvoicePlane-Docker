@@ -197,6 +197,12 @@ user/group that squats on those ids. Keep that logic intact.
 only. In a container, callers must pass `--no-sandbox` (and
 `--headless=new --disable-dev-shm-usage` for CI); the binary is left generic.
 
+`WORKSPACE_INSTALL_PUPPETEER=true` additionally installs the `puppeteer` npm
+package globally under `/usr/local` (on `NODE_PATH`), so Spatie Browsershot's
+`node .../browser.cjs` can `require('puppeteer')`. It does **not** download
+its own Chromium (`PUPPETEER_SKIP_DOWNLOAD`); `PUPPETEER_EXECUTABLE_PATH`
+points it at the Chrome above. Requires `WORKSPACE_INSTALL_CHROMIUM=true`.
+
 ## Sibling projects on this host
 
 `/data/prompt-ivpldock.md` is the onboarding doc for agents working in
