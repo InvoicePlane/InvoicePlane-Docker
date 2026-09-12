@@ -66,7 +66,7 @@ docker compose --env-file .env.docker exec workspace bash
 | `./builddmeup.sh`  | Rebuild images + start, detached                      |
 | `./buildmeup.sh`   | Rebuild images + start, in the foreground             |
 | `./workmeup.sh`    | Shell into `workspace` as the `ivpldock` user         |
-| `./down.sh`        | Stop and remove containers (`down -v` — also drops volumes, including the database; prefer `make down` for a non-destructive stop) |
+| `./down.sh`        | Stop and remove containers (no `-v` — volumes, including the database, are kept; use `make down-volumes` for the destructive variant) |
 
 The `Makefile` is the fuller interface (`make help` for the full list): `make start`, `make build`, `make shell`, `make logs`, `make status`, `make db-shell`, `make redis-cli`, `make down` (safe, keeps volumes), `make down-volumes` (explicit destructive variant), and more.
 

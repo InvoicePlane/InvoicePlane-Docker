@@ -1,2 +1,2 @@
 #!/bin/bash
-docker compose --env-file .env.docker down -v
+docker compose --env-file .env.docker down

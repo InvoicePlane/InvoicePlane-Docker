@@ -38,10 +38,12 @@ InvoicePlane and sibling PHP projects run on top of.
 
 ## Hard rules (do not violate)
 
-1. **`./down.sh` currently runs `docker compose down -v`** — it drops the
-   MariaDB volume (the database). Use `make down` or plain
-   `docker compose --env-file .env.docker down` for a safe stop. Don't call
-   `./down.sh` "safe".
+1. **`./down.sh` runs plain `docker compose down` (no `-v`)** — it keeps the
+   MariaDB volume (the database). For the explicit destructive variant use
+   `make down-volumes` or `docker compose --env-file .env.docker down -v`,
+   and confirm which `COMPOSE_PROJECT_NAME` a checkout resolves to first —
+   a scratch clone loading the same `.env.docker` targets this stack's own
+   volumes, not its own.
 2. **No `access_log` / `error_log` file paths in `sites/*.conf`.** nginx's
    root master opens them before dropping privileges, creating root-owned
    files on the host `logs/nginx/` mount. nginx already logs to

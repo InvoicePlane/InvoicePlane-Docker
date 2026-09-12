@@ -102,7 +102,7 @@ itself is broken.
 | `./builddmeup.sh` | Rebuild images + start, detached |
 | `./buildmeup.sh` | Rebuild images + start, foreground |
 | `./workmeup.sh` | Shell into `workspace` as the `ivpldock` user (`docker compose exec`) |
-| `./down.sh` | Stop and remove containers (`down -v` — also drops volumes) |
+| `./down.sh` | Stop and remove containers (no `-v` — volumes, including MariaDB's, are kept; use `make down-volumes` for the destructive variant) |
 
 All four `up` scripts start the same core set: `mariadb nginx php-fpm
 php-worker phpmyadmin redis workspace` (plus `beanstalkd`/`beanstalkd-console`

@@ -66,7 +66,7 @@ plus the `Makefile`, not just one — they have silently drifted apart before.
 | `./builddmeup.sh` | rebuild images + start, detached |
 | `./buildmeup.sh`  | rebuild images + start, foreground |
 | `./workmeup.sh`   | shell into `workspace` as the `ivpldock` user |
-| `./down.sh`       | stop and remove containers — **currently `down -v`, which also drops the MariaDB volume** (see hard rules) |
+| `./down.sh`       | stop and remove containers (no `-v` — volumes, including MariaDB's, are kept) |
 
 The `Makefile` is the fuller interface — `make help` lists ~30 targets
 (`make start`, `make build`, `make build-workspace`, `make shell`,
@@ -117,11 +117,14 @@ user/group that squats on those ids. Keep that logic intact.
 
 ## Hard rules / footguns (all learned the hard way — see git history)
 
-1. **`./down.sh` currently runs `docker compose down -v`.** That deletes the
-   `ivpldock_mariadb` named volume — i.e. the database. For a non-destructive
-   stop use `make down` or `docker compose --env-file .env.docker down` (no
-   `-v`). The data-safety plan wants `down.sh` itself fixed to drop `-v`;
-   until it is, do not tell anyone `./down.sh` is safe.
+1. **`./down.sh` runs plain `docker compose down` (no `-v`)** — it keeps the
+   `ivpldock_mariadb` volume, i.e. the database. It used to pass `-v` and
+   delete it; that has been fixed. For the explicit destructive variant use
+   `make down-volumes` or
+   `docker compose --env-file .env.docker down -v`, and always double-check
+   which `COMPOSE_PROJECT_NAME` a given checkout resolves to before running
+   `-v` by hand — a scratch clone that happens to load the same
+   `.env.docker` targets *this* stack's volumes, not its own.
 
 2. **Never add `access_log` / `error_log` directives pointing at
    `/var/log/nginx/*.log` in a `sites/*.conf` file.** nginx's master runs as
