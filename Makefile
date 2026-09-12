@@ -22,7 +22,7 @@
 # parameter-expansion syntax used in fix-permissions below.
 SHELL := /bin/bash
 
-DOCKER_COMPOSE := docker-compose --env-file .env.docker
+DOCKER_COMPOSE := docker compose --env-file .env.docker
 PHP_VERSION ?= 8.4
 
 # Keep in sync with buildmeup.sh/builddmeup.sh/starmeup.sh/startmeup.sh and
@@ -46,43 +46,43 @@ help: ## Display this help message
 
 build: ## Build all core images (default: PHP $(PHP_VERSION))
 	@echo "Building images for PHP $(PHP_VERSION)..."
-	$(DOCKER_COMPOSE) -e PHP_VERSION=$(PHP_VERSION) build $(CORE_SERVICES)
+	PHP_VERSION=$(PHP_VERSION) $(DOCKER_COMPOSE) build $(CORE_SERVICES)
 
 build-no-cache: ## Build all core images without cache (slower but fresh)
 	@echo "Building images (no cache) for PHP $(PHP_VERSION)..."
-	$(DOCKER_COMPOSE) -e PHP_VERSION=$(PHP_VERSION) build --no-cache $(CORE_SERVICES)
+	PHP_VERSION=$(PHP_VERSION) $(DOCKER_COMPOSE) build --no-cache $(CORE_SERVICES)
 
 build-workspace: ## Build only the workspace image
 	@echo "Building workspace image for PHP $(PHP_VERSION)..."
-	$(DOCKER_COMPOSE) -e PHP_VERSION=$(PHP_VERSION) build --no-cache workspace
+	PHP_VERSION=$(PHP_VERSION) $(DOCKER_COMPOSE) build workspace
 
 build-php-fpm: ## Build only the php-fpm image
 	@echo "Building PHP-FPM image for PHP $(PHP_VERSION)..."
-	$(DOCKER_COMPOSE) -e PHP_VERSION=$(PHP_VERSION) build --no-cache php-fpm
+	PHP_VERSION=$(PHP_VERSION) $(DOCKER_COMPOSE) build php-fpm
 
 build-nginx: ## Build only the nginx image
 	@echo "Building Nginx image..."
-	$(DOCKER_COMPOSE) build --no-cache nginx
+	$(DOCKER_COMPOSE) build nginx
 
 build-mariadb: ## Build only the mariadb image
 	@echo "Building MariaDB image..."
-	$(DOCKER_COMPOSE) build --no-cache mariadb
+	$(DOCKER_COMPOSE) build mariadb
 
 build-redis: ## Build only the redis image
 	@echo "Building Redis image..."
-	$(DOCKER_COMPOSE) build --no-cache redis
+	$(DOCKER_COMPOSE) build redis
 
 build-phpmyadmin: ## Build only the phpmyadmin image
 	@echo "Building phpMyAdmin image..."
-	$(DOCKER_COMPOSE) build --no-cache phpmyadmin
+	$(DOCKER_COMPOSE) build phpmyadmin
 
 build-php-worker: ## Build only the php-worker image
 	@echo "Building PHP Worker image for PHP $(PHP_VERSION)..."
-	$(DOCKER_COMPOSE) -e PHP_VERSION=$(PHP_VERSION) build --no-cache php-worker
+	PHP_VERSION=$(PHP_VERSION) $(DOCKER_COMPOSE) build php-worker
 
 build-beanstalkd: ## Build only the beanstalkd + beanstalkd-console images
 	@echo "Building Beanstalkd images..."
-	$(DOCKER_COMPOSE) build --no-cache beanstalkd beanstalkd-console
+	$(DOCKER_COMPOSE) build beanstalkd beanstalkd-console
 
 start: ## Start all core services (workspace, php-fpm, nginx, mariadb, redis, phpmyadmin, php-worker, beanstalkd)
 	@echo "Starting services..."
@@ -210,11 +210,11 @@ test-multi: ## Test build across PHP 8.2, 8.3, 8.4
 	@for version in 8.2 8.3 8.4; do \
 		echo ""; \
 		echo "===== Testing PHP $$version ====="; \
-		$(DOCKER_COMPOSE) -e PHP_VERSION=$$version build --no-cache workspace && \
-		$(DOCKER_COMPOSE) -e PHP_VERSION=$$version up -d workspace && \
+		PHP_VERSION=$$version $(DOCKER_COMPOSE) build --no-cache workspace && \
+		PHP_VERSION=$$version $(DOCKER_COMPOSE) up -d workspace && \
 		sleep 2 && \
-		$(DOCKER_COMPOSE) -e PHP_VERSION=$$version exec -T workspace php -v && \
-		$(DOCKER_COMPOSE) -e PHP_VERSION=$$version stop workspace; \
+		PHP_VERSION=$$version $(DOCKER_COMPOSE) exec -T workspace php -v && \
+		PHP_VERSION=$$version $(DOCKER_COMPOSE) stop workspace; \
 	done
 
 # PROJECT selects a subdirectory of APP_CODE_PATH_CONTAINER (/var/www/projects
