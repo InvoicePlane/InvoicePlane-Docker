@@ -15,7 +15,7 @@ check_and_create_volumes ivpldock_redis
 check_and_create_volumes ivpldock_mariadb
 
 COMPOSE_DOCKER_CLI_BUILD=1 DOCKER_BUILDKIT=1 \
-docker-compose --env-file .env.docker up \
+docker compose --env-file .env.docker up \
   --build \
   beanstalkd \
   beanstalkd-console \

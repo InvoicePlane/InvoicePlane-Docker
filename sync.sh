@@ -59,17 +59,17 @@ if [ "$1" == "up" ] ; then
 
     print_style "Initializing Docker Compose\n" "info"
     shift # removing first argument
-    docker-compose up -d ${@}
+    docker compose up -d ${@}
 
 elif [ "$1" == "down" ]; then
     print_style "Stopping Docker Compose\n" "info"
-    docker-compose stop
+    docker compose stop
 
     print_style "Stopping Docker Sync\n" "info"
     docker-sync stop
 
 elif [ "$1" == "bash" ]; then
-    docker-compose exec --user=laradock workspace bash
+    docker compose exec --user=laradock workspace bash
 
 elif [ "$1" == "install" ]; then
     print_style "Installing docker-sync\n" "info"
