@@ -120,6 +120,24 @@ lookup — this host runs several unrelated Compose projects side by side, and
 a substring name filter can match the wrong container or return more than
 one ID.
 
+**Every `docker compose` invocation against this stack — start, stop, exec,
+ps, logs, down, all of it — must pass `--env-file .env.docker`.** That file
+sets `COMPOSE_PROJECT_NAME=ivpldock`, which is what makes a given `docker
+compose` command resolve to *this* stack's containers/networks/volumes
+instead of some other Compose project. That's the entire reason `down.sh`
+exists as a wrapper instead of telling people to type `docker compose down`
+from memory: a bare `docker compose down -v` run without `--env-file
+.env.docker` — including from a scratch clone or any other checkout of this
+repo, since the project name comes from the env file's contents, not the
+directory it's sitting in — can silently target and destroy *this* stack's
+real running containers and volumes (mariadb's data included) if that other
+checkout happens to load the same `.env.docker` (or a copy of it). Never run
+a bare `docker-compose`/`docker compose down`, `up`, `stop`, or any other
+lifecycle command against a clone of this repo without first confirming
+which `COMPOSE_PROJECT_NAME` it resolves to — when in doubt, use `./down.sh`
+or the other helper scripts in this directory rather than typing the
+`docker compose` invocation by hand.
+
 ### Building & Running
 
 **Build a single service:**

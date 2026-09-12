@@ -1,222 +1,89 @@
-<p align="center">
-    <img src="/.github/home-page-images/laradock-logo.jpg?raw=true" alt="Laradock Logo"/>
-</p>
+# ivpldock
 
-<p align="center">
-   <a href="https://laradock.io/contributing"><img src="https://img.shields.io/badge/contributions-welcome-brightgreen.svg?style=flat" alt="contributions welcome"></a>
-   <a href="https://github.com/laradock/laradock/network"><img src="https://img.shields.io/github/forks/laradock/laradock.svg" alt="GitHub forks"></a>
-   <a href="https://github.com/laradock/laradock/issues"><img src="https://img.shields.io/github/issues/laradock/laradock.svg" alt="GitHub issues"></a>
-   <a href="https://github.com/laradock/laradock/stargazers"><a href="#backers" alt="sponsors on Open Collective"><img src="https://opencollective.com/laradock/backers/badge.svg" /></a> <a href="#sponsors" alt="Sponsors on Open Collective"><img src="https://opencollective.com/laradock/sponsors/badge.svg" /></a> <img src="https://img.shields.io/github/stars/laradock/laradock.svg" alt="GitHub stars"></a>
-   <a href="https://github.com/laradock/laradock/actions/workflows/main-ci.yml"><img src="https://github.com/laradock/laradock/actions/workflows/main-ci.yml/badge.svg" alt="GitHub CI"></a>
-   <a href="https://raw.githubusercontent.com/laradock/laradock/master/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="GitHub license"></a>
-</p>
+A slimmed-down Docker Compose development stack for [InvoicePlane](https://github.com/InvoicePlane/InvoicePlane) and sibling PHP/Laravel projects — forked from [Laradock](https://laradock.io) and cut down from its 90+ optional services to the nine this project actually needs.
 
-<p align="center"><b>Full PHP development environment based on Docker.</b></p>
+[![Build & Test Docker Images](https://github.com/InvoicePlane/InvoicePlane-Docker/actions/workflows/build-images.yml/badge.svg?branch=develop)](https://github.com/InvoicePlane/InvoicePlane-Docker/actions/workflows/build-images.yml)
+[![Test Individual Containers](https://github.com/InvoicePlane/InvoicePlane-Docker/actions/workflows/test-containers.yml/badge.svg?branch=develop)](https://github.com/InvoicePlane/InvoicePlane-Docker/actions/workflows/test-containers.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](#license)
 
-<p align="center">
-    <a href="https://zalt.me"><img src="http://forthebadge.com/images/badges/built-by-developers.svg" alt="forthebadge" width="180"></a>
-</p>
+This repository is infrastructure, not an application: it's the PHP / MariaDB / Redis / nginx / Beanstalkd layer that InvoicePlane runs on top of. If you're looking for InvoicePlane itself, see the [InvoicePlane](https://github.com/InvoicePlane/InvoicePlane) repository.
 
-<br>
-<br>
+## Why a fork instead of plain Laradock
 
-<h4 align="center" style="color:#7d58c2">Use Docker First - Learn About It Later!</h4>
+Upstream Laradock supports dozens of stacks and optional services most projects never touch. ivpldock keeps exactly what InvoicePlane-family projects need — nine core services plus a deliberately-deferred `docker-in-docker` — and deletes the rest, in exchange for:
 
-<p align="center">
-	<a href="https://laradock.io">
-	   <img src="https://raw.githubusercontent.com/laradock/laradock/master/.github/home-page-images/documentation-button.png" width="300px" alt="Laradock Documentation"/>
-	</a>
-</p>
+- A much smaller surface area to keep patched and building.
+- Painless host file permissions: everything a container writes to a host-mounted path comes out owned by your own user, no `sudo chown` afterward.
+- PHP 7.4 through 8.4 support (target: 8.4), MariaDB pinned at 10.11.
 
+## Core services
 
----
+| Service              | Purpose                                                  | Host access                      |
+|-----------------------|-----------------------------------------------------------|-----------------------------------|
+| `workspace`           | CLI container: PHP, Composer, Node/npm/Yarn, headless Chromium | `./workmeup.sh`              |
+| `php-fpm`             | Application PHP runtime (`PHP_VERSION`-selectable)        | via `nginx`                       |
+| `php-worker`          | `supervisord` container for queue workers / schedulers    | background only                   |
+| `nginx`               | Web server, one vhost per project under `sites/*.conf`     | `http://localhost` (80/443)      |
+| `mariadb`             | MySQL-compatible database, 10.11 pinned                   | `localhost:${MARIADB_PORT}` (default 3306) |
+| `redis`               | Cache / session store                                     | `localhost:6379`                  |
+| `beanstalkd`          | Job queue                                                  | background                        |
+| `beanstalkd-console`  | Beanstalkd web UI                                          | background                        |
+| `phpmyadmin`          | Database admin UI                                          | `http://localhost:8081`          |
 
+`docker-in-docker` is also defined and wired into `workspace`/`php-fpm`, kept as a deliberate, not-yet-decided exception rather than a tenth blessed service.
 
-## Awesome People
+## Quick start
 
-Laradock is an MIT-licensed open source project with its ongoing development made possible entirely by the support of you and all these awesome people. 💜
+**Prerequisites:** Docker Engine with the Compose v2 plugin (`docker compose version`, not the legacy standalone `docker-compose` binary).
 
+```bash
+git clone <this-repo> ivpldock && cd ivpldock
+cp .env.example .env.docker
+./startmeup.sh
+```
 
+`.env.docker` is your local, uncommitted configuration — edit it (PHP version, which optional features to install, PUID/PGID, ports) before or after the first start. Notable defaults worth checking:
 
-### Project Maintainers
+- `APP_CODE_PATH_HOST` — path to the directory holding the projects you want served (default `../projects`).
+- `PHP_VERSION` — default `8.4`.
+- `WORKSPACE_PUID` / `WORKSPACE_PGID` — default `1000:1001`; set these to match your host user so container-written files stay yours.
 
-<table>
-  <tbody>
-    <tr>
-        <td align="center" valign="top">
-            <img width="125" height="125" src="https://github.com/mahmoudz.png?s=150">
-            <br>
-            <strong>Mahmoud Zalt</strong>
-            <br>
-            <a href="https://github.com/Mahmoudz">@mahmoudz</a>
-        </td>
-        <td align="center" valign="top">
-            <img width="125" height="125" src="https://github.com/appleboy.png?s=150">
-            <br>
-            <strong>Bo-Yi Wu</strong>
-            <br>
-            <a href="https://github.com/appleboy">@appleboy</a>
-        </td>
-        <td align="center" valign="top">
-            <img width="125" height="125" src="https://github.com/philtrep.png?s=150">
-            <br>
-            <strong>Philippe Trépanier</strong>
-            <br>
-            <a href="https://github.com/philtrep">@philtrep</a>
-        </td>
-        <td align="center" valign="top">
-            <img width="125" height="125" src="https://github.com/mikeerickson.png?s=150">
-            <br>
-            <strong>Mike Erickson</strong>
-            <br>
-            <a href="https://github.com/mikeerickson">@mikeerickson</a>
-        </td>
-        <td align="center" valign="top">
-            <img width="125" height="125" src="https://github.com/zeroc0d3.png?s=150">
-            <br>
-            <strong>Dwi Fahni Denni</strong>
-            <br>
-            <a href="https://github.com/zeroc0d3">@zeroc0d3</a>
-        </td>
-     </tr>
-     <tr>
-        <td align="center" valign="top">
-            <img width="125" height="125" src="https://github.com/thorerik.png?s=150">
-            <br>
-            <strong>Thor Erik</strong>
-            <br>
-            <a href="https://github.com/thorerik">@thorerik</a>
-        </td>
-        <td align="center" valign="top">
-            <img width="125" height="125" src="https://github.com/winfried-van-loon.png?s=150">
-            <br>
-            <strong>Winfried van Loon</strong>
-            <br>
-            <a href="https://github.com/winfried-van-loon">@winfried-van-loon</a>
-        </td>
-        <td align="center" valign="top">
-            <img width="125" height="125" src="https://github.com/sixlive.png?s=150">
-            <br>
-            <strong>TJ Miller</strong>
-            <br>
-            <a href="https://github.com/sixlive">@sixlive</a>
-        </td>
-        <td align="center" valign="top">
-            <img width="125" height="125" src="https://github.com/bestlong.png?s=150">
-            <br>
-            <strong>Yu-Lung Shao (Allen)</strong>
-            <br>
-            <a href="https://github.com/bestlong">@bestlong</a>
-        </td>
-        <td align="center" valign="top">
-            <img width="125" height="125" src="https://github.com/urukalo.png?s=150">
-            <br>
-            <strong>Milan Urukalo</strong>
-            <br>
-            <a href="https://github.com/urukalo">@urukalo</a>
-        </td>
-     </tr>
-     <tr>
-        <td align="center" valign="top">
-            <img width="125" height="125" src="https://github.com/vwchu.png?s=150">
-            <br>
-            <strong>Vince Chu</strong>
-            <br>
-            <a href="https://github.com/vwchu">@vwchu</a>
-        </td>
-        <td align="center" valign="top">
-            <img width="125" height="125" src="https://github.com/zuohuadong.png?s=150">
-            <br>
-            <strong>Huadong Zuo</strong>
-            <br>
-            <a href="https://github.com/zuohuadong">@zuohuadong</a>
-        </td>
-        <td align="center" valign="top">
-            <img width="125" height="125" src="https://github.com/lanphan.png?s=150">
-            <br>
-            <strong>Lan Phan</strong>
-            <br>
-            <a href="https://github.com/lanphan">@lanphan</a>
-        </td>
-        <td align="center" valign="top">
-            <img width="125" height="125" src="https://github.com/ahkui.png?s=150">
-            <br>
-            <strong>Ahkui</strong>
-            <br>
-            <a href="https://github.com/ahkui">@ahkui</a>
-        </td>
-        <td align="center" valign="top">
-            <img width="125" height="125" src="https://raw.githubusercontent.com/laradock/laradock/master/.github/home-page-images/join-us.png">
-            <br>
-            <strong>< Join Us ></strong>
-            <br>
-            <a href="https://github.com/laradock">@laradock</a>
-        </td>
-     </tr>
-  </tbody>
-</table>
+Once it's up, `./workmeup.sh` drops you into the `workspace` container as the `ivpldock` user for Composer/npm/artisan work.
 
+## Everyday commands
 
-### Code Contributors
+Every helper script and Makefile target already passes `--env-file .env.docker` for you — do the same if you ever call `docker compose` directly, since that file is what pins the Compose project to *this* stack instead of some other project on the host:
 
-[![Laradock Contributors](https://opencollective.com/laradock/contributors.svg?width=890&button=false&isActive=true)](https://github.com/laradock/laradock/graphs/contributors)
+```bash
+docker compose --env-file .env.docker ps
+docker compose --env-file .env.docker exec workspace bash
+```
 
-### Financial Contributors (Backers)
+| Script             | Effect                                              |
+|--------------------|------------------------------------------------------|
+| `./startmeup.sh`   | Start the core stack, detached, no rebuild           |
+| `./starmeup.sh`    | Same, in the foreground                               |
+| `./builddmeup.sh`  | Rebuild images + start, detached                      |
+| `./buildmeup.sh`   | Rebuild images + start, in the foreground             |
+| `./workmeup.sh`    | Shell into `workspace` as the `ivpldock` user         |
+| `./down.sh`        | Stop and remove containers (`down -v` — also drops volumes, including the database; prefer `make down` for a non-destructive stop) |
 
-[![Open Collective backers](https://opencollective.com/laradock/tiers/awesome-backers.svg?width=800&avatarHeight=65&button=false&isActive=true)](https://opencollective.com/laradock#contributors)
+The `Makefile` is the fuller interface (`make help` for the full list): `make start`, `make build`, `make shell`, `make logs`, `make status`, `make db-shell`, `make redis-cli`, `make down` (safe, keeps volumes), `make down-volumes` (explicit destructive variant), and more.
 
+## Documentation
 
+- **[AGENTS.md](AGENTS.md)** — the canonical, tool-neutral reference: full service list, permissions model, and the hard-learned rules (footguns) for working in this repo safely. Start here for anything beyond a quick start.
+- **[CLAUDE.md](CLAUDE.md)** — Claude Code–specific depth on top of AGENTS.md.
+- `.junie/guidelines.md` and `.github/copilot-instructions.md` — the same brief for Junie and GitHub Copilot.
 
+## Contributing
 
-## Sponsors
+Issues and pull requests are welcome. Please read [AGENTS.md](AGENTS.md) first — it documents several non-obvious constraints (permissions model, service parity across helper scripts, nginx logging) that have caused real regressions before.
 
-Sponsoring is an act of giving in a different fashion. 🌱
+## Credits
 
-### Diamond Sponsors
-
-<p align="left">
-  <a href="https://smart.sista.ai/?utm_source=docs_laradock&utm_medium=sponsor&utm_campaign=github_readme_page" target="_blank"><img src="https://raw.githubusercontent.com/laradock/laradock/master/.github/home-page-images/custom-sponsors/sista-ai-icon.png" height="165px" alt="Sista AI - Plug-and-Play AI Assistant." style="margin-right: 4em;"></a><a href="http://apiato.io/" target="_blank"><img src="https://raw.githubusercontent.com/laradock/laradock/master/.github/home-page-images/custom-sponsors/apiato.png" height="165px" alt="Apiato - A powerful PHP framework for building scalable, enterprise-grade APIs!"></a>
-</p>
-
-
-### Gold Sponsors
-
-<div style="display: flex; flex-wrap: wrap; gap: 25px; justify-content: left; align-items: left;">
-  <a href="https://opencollective.com/laradock/tiers/gold-sponsors/0/website" target="_blank" rel="sponsored"><img src="https://opencollective.com/laradock/tiers/gold-sponsors/0/avatar.svg?avatarHeight=100" height="115" /></a>
-  <a href="https://opencollective.com/laradock/tiers/gold-sponsors/1/website" target="_blank" rel="sponsored"><img src="https://opencollective.com/laradock/tiers/gold-sponsors/1/avatar.svg?avatarHeight=100" height="115" /></a>
-  <a href="https://opencollective.com/laradock/tiers/gold-sponsors/2/website" target="_blank" rel="sponsored"><img src="https://opencollective.com/laradock/tiers/gold-sponsors/2/avatar.svg?avatarHeight=100" height="115" /></a>
-  <a href="https://opencollective.com/laradock/tiers/gold-sponsors/3/website" target="_blank" rel="sponsored"><img src="https://opencollective.com/laradock/tiers/gold-sponsors/3/avatar.svg?avatarHeight=100" height="115" /></a>
-  <a href="https://opencollective.com/laradock/tiers/gold-sponsors/4/website" target="_blank" rel="sponsored"><img src="https://opencollective.com/laradock/tiers/gold-sponsors/4/avatar.svg?avatarHeight=100" height="115" /></a>
-  <a href="https://opencollective.com/laradock/tiers/gold-sponsors/5/website" target="_blank" rel="sponsored"><img src="https://opencollective.com/laradock/tiers/gold-sponsors/5/avatar.svg?avatarHeight=100" height="115" /></a>
-  <a href="https://opencollective.com/laradock/tiers/gold-sponsors/6/website" target="_blank" rel="sponsored"><img src="https://opencollective.com/laradock/tiers/gold-sponsors/6/avatar.svg?avatarHeight=100" height="115" /></a>
-  <a href="https://opencollective.com/laradock/tiers/gold-sponsors/7/website" target="_blank" rel="sponsored"><img src="https://opencollective.com/laradock/tiers/gold-sponsors/7/avatar.svg?avatarHeight=100" height="115" /></a>
-  <a href="https://opencollective.com/laradock/tiers/gold-sponsors/8/website" target="_blank" rel="sponsored"><img src="https://opencollective.com/laradock/tiers/gold-sponsors/8/avatar.svg?avatarHeight=100" height="115" /></a>
-  <a href="https://opencollective.com/laradock/tiers/gold-sponsors/9/website" target="_blank" rel="sponsored"><img src="https://opencollective.com/laradock/tiers/gold-sponsors/9/avatar.svg?avatarHeight=100" height="115" /></a>
-  <a href="https://opencollective.com/laradock/tiers/gold-sponsors/10/website" target="_blank" rel="sponsored"><img src="https://opencollective.com/laradock/tiers/gold-sponsors/10/avatar.svg?avatarHeight=100" height="115" /></a>
-  <a href="https://opencollective.com/laradock/tiers/gold-sponsors/11/website" target="_blank" rel="sponsored"><img src="https://opencollective.com/laradock/tiers/gold-sponsors/11/avatar.svg?avatarHeight=100" height="115" /></a>
-  <a href="https://opencollective.com/laradock/tiers/gold-sponsors/12/website" target="_blank" rel="sponsored"><img src="https://opencollective.com/laradock/tiers/gold-sponsors/12/avatar.svg?avatarHeight=100" height="115" /></a>
-  <a href="https://opencollective.com/laradock/tiers/gold-sponsors/13/website" target="_blank" rel="sponsored"><img src="https://opencollective.com/laradock/tiers/gold-sponsors/13/avatar.svg?avatarHeight=100" height="115" /></a>
-  <a href="https://opencollective.com/laradock/tiers/gold-sponsors/14/website" target="_blank" rel="sponsored"><img src="https://opencollective.com/laradock/tiers/gold-sponsors/14/avatar.svg?avatarHeight=100" height="115" /></a>
-  <a href="https://opencollective.com/laradock/tiers/gold-sponsors/15/website" target="_blank" rel="sponsored"><img src="https://opencollective.com/laradock/tiers/gold-sponsors/15/avatar.svg?avatarHeight=100" height="115" /></a>
-  <a href="https://opencollective.com/laradock/tiers/gold-sponsors/16/website" target="_blank" rel="sponsored"><img src="https://opencollective.com/laradock/tiers/gold-sponsors/16/avatar.svg?avatarHeight=100" height="115" /></a>
-  <a href="https://opencollective.com/laradock/tiers/gold-sponsors/17/website" target="_blank" rel="sponsored"><img src="https://opencollective.com/laradock/tiers/gold-sponsors/17/avatar.svg?avatarHeight=100" height="115" /></a>
-  <a href="https://opencollective.com/laradock/tiers/gold-sponsors/18/website" target="_blank" rel="sponsored"><img src="https://opencollective.com/laradock/tiers/gold-sponsors/18/avatar.svg?avatarHeight=100" height="115" /></a>
-  <a href="https://opencollective.com/laradock/tiers/gold-sponsors/19/website" target="_blank" rel="sponsored"><img src="https://opencollective.com/laradock/tiers/gold-sponsors/19/avatar.svg?avatarHeight=100" height="115" /></a>
-</div>
-
-### Silver Sponsors
-
-![Silver Sponsors](https://opencollective.com/laradock/tiers/silver-sponsors.svg?avatarHeight=90&width=800&format=svg&button=false&background=%231B1B1D)
-
-### Bronze Sponsors
-
-![Bronze Sponsors](https://opencollective.com/laradock/tiers/bronze-sponsors.svg?avatarHeight=65&width=800&format=svg&button=false&background=%231B1B1D)
-
-
-## Translations
-
-- [中文文档 (Chinese)](./README-zh.md)
+ivpldock is a fork of [Laradock](https://laradock.io), created by Mahmoud Zalt and maintained by its own community of contributors. All credit for the original architecture and the bulk of the Dockerfiles goes to that project — see the [Laradock repository](https://github.com/laradock/laradock) for its full list of maintainers, contributors, and sponsors.
 
 ## License
 
-[MIT](https://github.com/laradock/laradock/blob/master/LICENSE) © [Mahmoud Zalt](https://zalt.me/)
+MIT, inherited unchanged from the upstream [Laradock license](https://github.com/laradock/laradock/blob/master/LICENSE).
