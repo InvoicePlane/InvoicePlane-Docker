@@ -1,6 +1,19 @@
 name: Test Individual Containers
 
 on:
+  push:
+    branches: [ master, develop ]
+    paths:
+      - '.docker/**'
+      - '.env.docker'
+      - 'docker-compose.yml'
+      - '.github/workflows/test-containers.yml'
+  pull_request:
+    branches: [ master, develop ]
+    paths:
+      - '.docker/**'
+      - '.env.docker'
+      - 'docker-compose.yml'
   workflow_dispatch:
     inputs:
       container:
