@@ -782,17 +782,32 @@ ARG INSTALL_PUPPETEER=false
 # `npm install`, including from PHP shelling out to `node` in the PHPUnit
 # suite (which never sources ivpldock's .bashrc).
 #
+# NODE_PATH alone is not enough for Spatie Browsershot specifically: its
+# `browser.cjs` launcher spawns node with NODE_PATH overridden to the live
+# output of `npm root -g`, clobbering whatever NODE_PATH the container
+# already had. Since /usr/local/bin/npm is a symlink into nvm's own node
+# install (see the Node/NVM section above), `npm root -g` without an
+# explicit prefix reports nvm's global dir (e.g.
+# ~/.nvm/versions/node/vX/lib/node_modules), not /usr/local — so Browsershot
+# would still fail with `Cannot find module 'puppeteer'` even though the
+# package is installed and NODE_PATH is set correctly at the container
+# level. NPM_CONFIG_PREFIX pins npm's global prefix to /usr/local for every
+# npm/node invocation (env var beats .npmrc/nvm defaults), so `npm root -g`
+# — however it's invoked — always agrees with where puppeteer actually is.
+#
 # Puppeteer's own bundled-Chromium download is skipped — we point it at the
 # Chrome already installed above so the image carries exactly one browser.
 # `puppeteer.launch()` with no executablePath honours PUPPETEER_EXECUTABLE_PATH.
 ENV PUPPETEER_SKIP_DOWNLOAD=true \
     PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
     PUPPETEER_EXECUTABLE_PATH=/usr/local/bin/chromium \
-    NODE_PATH=/usr/local/lib/node_modules
+    NODE_PATH=/usr/local/lib/node_modules \
+    NPM_CONFIG_PREFIX=/usr/local
 RUN if [ ${INSTALL_PUPPETEER} = true ]; then \
       set -eux; \
       /usr/local/bin/npm install -g --prefix=/usr/local puppeteer; \
       NODE_PATH=/usr/local/lib/node_modules node -e "require.resolve('puppeteer')"; \
+      test "$(npm root -g)" = "/usr/local/lib/node_modules"; \
       /usr/local/bin/chromium --version; \
     fi; \
     true

@@ -59,6 +59,7 @@ services:
         - DOCKER_TLS_CERTDIR=/certs
         - DOCKER_CERT_PATH=/certs/client
         - CHOKIDAR_USEPOLLING=true
+        - IP_BROWSERSHOT_NO_SANDBOX=${IP_BROWSERSHOT_NO_SANDBOX}
       networks:
         - frontend
         - backend
