@@ -29,24 +29,31 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
+      # .env.docker is gitignored (local-only overrides) so it never reaches
+      # a CI checkout — seed it from the committed template.
+      - name: Create .env.docker
+        run: cp .env.example .env.docker
+
       - name: Build workspace image (PHP ${{ matrix.php-version }})
+        env:
+          PHP_VERSION: ${{ matrix.php-version }}
         run: |
-          docker-compose \
+          docker compose \
             --env-file .env.docker \
-            -e PHP_VERSION=${{ matrix.php-version }} \
             build --no-cache workspace
         timeout-minutes: 45
 
       - name: Test workspace image
+        env:
+          PHP_VERSION: ${{ matrix.php-version }}
         run: |
-          docker-compose \
+          docker compose \
             --env-file .env.docker \
-            -e PHP_VERSION=${{ matrix.php-version }} \
             up -d workspace
 
           sleep 3
 
-          docker-compose \
+          docker compose \
             --env-file .env.docker \
             exec -T workspace bash -c "
               echo '=== PHP Version ===' && \
@@ -66,7 +73,7 @@ jobs:
       - name: Cleanup
         if: always()
         run: |
-          docker-compose --env-file .env.docker down -v
+          docker compose --env-file .env.docker down -v
 
   build-php-fpm:
     runs-on: ubuntu-latest
@@ -81,24 +88,29 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
+      - name: Create .env.docker
+        run: cp .env.example .env.docker
+
       - name: Build php-fpm image (PHP ${{ matrix.php-version }})
+        env:
+          PHP_VERSION: ${{ matrix.php-version }}
         run: |
-          docker-compose \
+          docker compose \
             --env-file .env.docker \
-            -e PHP_VERSION=${{ matrix.php-version }} \
             build --no-cache php-fpm
         timeout-minutes: 30
 
       - name: Test php-fpm image
+        env:
+          PHP_VERSION: ${{ matrix.php-version }}
         run: |
-          docker-compose \
+          docker compose \
             --env-file .env.docker \
-            -e PHP_VERSION=${{ matrix.php-version }} \
             up -d php-fpm
 
           sleep 2
 
-          docker-compose \
+          docker compose \
             --env-file .env.docker \
             exec -T php-fpm php -v
         timeout-minutes: 10
@@ -106,7 +118,7 @@ jobs:
       - name: Cleanup
         if: always()
         run: |
-          docker-compose --env-file .env.docker down -v
+          docker compose --env-file .env.docker down -v
 
   build-nginx:
     runs-on: ubuntu-latest
@@ -117,22 +129,25 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
+      - name: Create .env.docker
+        run: cp .env.example .env.docker
+
       - name: Build nginx image
         run: |
-          docker-compose \
+          docker compose \
             --env-file .env.docker \
             build --no-cache nginx
         timeout-minutes: 15
 
       - name: Test nginx image
         run: |
-          docker-compose \
+          docker compose \
             --env-file .env.docker \
             up -d nginx
 
           sleep 2
 
-          docker-compose \
+          docker compose \
             --env-file .env.docker \
             exec -T nginx nginx -v
         timeout-minutes: 10
@@ -140,4 +155,4 @@ jobs:
       - name: Cleanup
         if: always()
         run: |
-          docker-compose --env-file .env.docker down -v
+          docker compose --env-file .env.docker down -v
