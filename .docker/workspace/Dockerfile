@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:1
 #
 #--------------------------------------------------------------------------
 # Image Setup
@@ -22,6 +23,14 @@ ARG IVPLDOCK_PHP_VERSION
 
 # Set Environment Variables
 ENV DEBIAN_FRONTEND noninteractive
+
+# Debian's base images ship an apt post-invoke hook that deletes every
+# downloaded .deb immediately after each transaction, which would silently
+# defeat every --mount=type=cache,target=/var/cache/apt below (the mount
+# would just get emptied again on every RUN). Disable it once, up front, so
+# the cache actually persists downloaded packages across builds.
+RUN rm -f /etc/apt/apt.conf.d/docker-clean && \
+    echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache
 
 # Start as root
 USER root
@@ -77,7 +86,7 @@ RUN set -e; \
     echo "✓ User setup complete. ivpldock: UID=$(id -u ivpldock) GID=$(id -g ivpldock)"
 
 # Step 2: Volatile System Package Installation Block
-RUN export DEBIAN_FRONTEND=noninteractive; \
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked export DEBIAN_FRONTEND=noninteractive; \
     if [ ${WORKSPACE_ALLOW_RELEASE_INFO_CHANGE} = true ]; then \
       APT_GET_UPDATE_OPTIONS="--allow-releaseinfo-change"; \
     else \
@@ -298,7 +307,7 @@ ARG INSTALL_SMB=false
 ARG INSTALL_IMAP=false
 ARG INSTALL_SUBVERSION=false
 
-RUN set -eux; \
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked set -eux; \
     if [ ${INSTALL_LDAP} = true ]; then \
         apt-get install -yqq libldap2-dev php${IVPLDOCK_PHP_VERSION}-ldap; \
     fi; \
@@ -327,7 +336,7 @@ USER root
 ARG INSTALL_XDEBUG=false
 ARG XDEBUG_PORT=9003
 
-RUN if [ ${INSTALL_XDEBUG} = true ]; then \
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked if [ ${INSTALL_XDEBUG} = true ]; then \
   apt-get install -yqq pkg-config php-xml php${IVPLDOCK_PHP_VERSION}-xml && \
   if [ $(php -r "echo PHP_MAJOR_VERSION;") = "8" ] || { [ $(php -r "echo PHP_MAJOR_VERSION;") = "7" ] && { [ $(php -r "echo PHP_MINOR_VERSION;") = "4" ] || [ $(php -r "echo PHP_MINOR_VERSION;") = "3" ] ;} ;}; then \
     if [ $(php -r "echo PHP_MAJOR_VERSION;") = "8" ]; then \
@@ -391,7 +400,7 @@ USER root
 
 ARG INSTALL_PHPDBG=false
 
-RUN if [ ${INSTALL_PHPDBG} = true ]; then \
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked if [ ${INSTALL_PHPDBG} = true ]; then \
     apt-get install -y --force-yes php${IVPLDOCK_PHP_VERSION}-phpdbg \
 ;fi
 
@@ -405,7 +414,7 @@ ENV BLACKFIRE_CLIENT_ID ${BLACKFIRE_CLIENT_ID}
 ARG BLACKFIRE_CLIENT_TOKEN
 ENV BLACKFIRE_CLIENT_TOKEN ${BLACKFIRE_CLIENT_TOKEN}
 
-RUN if [ ${INSTALL_XDEBUG} = false -a ${INSTALL_BLACKFIRE} = true ]; then \
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked if [ ${INSTALL_XDEBUG} = false -a ${INSTALL_BLACKFIRE} = true ]; then \
     curl -L https://packages.blackfire.io/gpg.key | apt-key add - && \
     echo "deb http://packages.blackfire.io/debian any main" | tee /etc/apt/sources.list.d/blackfire.list && \
     apt-get update -yqq && \
@@ -439,7 +448,7 @@ RUN if [ ${INSTALL_WORKSPACE_SSH} = true ]; then \
 
 ARG INSTALL_MONGO=false
 
-RUN if [ ${INSTALL_MONGO} = true ]; then \
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked if [ ${INSTALL_MONGO} = true ]; then \
     apt-get install -yqq pkg-config && \
     if [ $(php -r "echo PHP_MAJOR_VERSION;") = "5" ]; then \
       pecl install mongo; \
@@ -476,7 +485,7 @@ fi
 
 ARG INSTALL_AMQP=false
 
-RUN if [ ${INSTALL_AMQP} = true ]; then \
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked if [ ${INSTALL_AMQP} = true ]; then \
     apt-get install -yqq librabbitmq-dev && \
     if [ ${IVPLDOCK_PHP_VERSION} = "7.3" ] \
       || [ ${IVPLDOCK_PHP_VERSION} = "7.2" ] \
@@ -498,7 +507,7 @@ RUN if [ ${INSTALL_AMQP} = true ]; then \
 
 ARG INSTALL_CASSANDRA=false
 
-RUN if [ ${INSTALL_CASSANDRA} = true ]; then \
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked if [ ${INSTALL_CASSANDRA} = true ]; then \
     if [ $(php -r "echo PHP_MAJOR_VERSION;") = "8" ]; then \
       echo "PHP Driver for Cassandra is not supported for PHP 8.0."; \
     else \
@@ -533,7 +542,7 @@ RUN if [ ${INSTALL_CASSANDRA} = true ]; then \
 
 ARG INSTALL_GEARMAN=false
 
-RUN if [ ${INSTALL_GEARMAN} = true ]; then \
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked if [ ${INSTALL_GEARMAN} = true ]; then \
     add-apt-repository -y ppa:ondrej/pkg-gearman && \
     apt-get update && \
     if [ $(php -r "echo PHP_MAJOR_VERSION;") = "7" ]; then \
@@ -549,7 +558,7 @@ RUN if [ ${INSTALL_GEARMAN} = true ]; then \
 
 ARG INSTALL_PHPREDIS=false
 
-RUN if [ ${INSTALL_PHPREDIS} = true ]; then \
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked if [ ${INSTALL_PHPREDIS} = true ]; then \
     apt-get update --allow-releaseinfo-change \
     && apt-get install -yqq php${IVPLDOCK_PHP_VERSION}-redis \
 ;fi
@@ -560,7 +569,7 @@ RUN if [ ${INSTALL_PHPREDIS} = true ]; then \
 
 ARG INSTALL_SWOOLE=false
 
-RUN set -eux; \
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked set -eux; \
     if [ ${INSTALL_SWOOLE} = true ]; then \
       if [ $(php -r "echo PHP_MAJOR_VERSION;") = "5" ]; then \
         echo '' | pecl -q install swoole-2.0.10; \
@@ -603,7 +612,7 @@ RUN set -eux; \
 # Install build dependencies required for Node compilation
 USER root
 
-RUN apt-get update && \
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked apt-get update && \
     apt-get install -yqq curl && \
     true
 
@@ -734,7 +743,7 @@ ARG INSTALL_CHROMIUM=false
 # Runtime note: in a container Chrome needs `--no-sandbox` (no user
 # namespaces), and `--headless=new --disable-dev-shm-usage` for CI. Callers
 # pass those themselves; we don't wrap them in so the binary stays generic.
-RUN if [ ${INSTALL_CHROMIUM} = true ]; then \
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked if [ ${INSTALL_CHROMIUM} = true ]; then \
       set -eux; \
       apt-get update; \
       apt-get install -y --no-install-recommends ca-certificates curl gnupg; \

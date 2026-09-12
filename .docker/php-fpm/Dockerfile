@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:1
 #
 #--------------------------------------------------------------------------
 # Image Setup
@@ -23,6 +24,14 @@ ARG IVPLDOCK_PHP_VERSION
 # Set Environment Variables
 ENV DEBIAN_FRONTEND noninteractive
 
+# Debian's base images ship an apt post-invoke hook that deletes every
+# downloaded .deb immediately after each transaction, which would silently
+# defeat every --mount=type=cache,target=/var/cache/apt below (the mount
+# would just get emptied again on every RUN). Disable it once, up front, so
+# the cache actually persists downloaded packages across builds.
+RUN rm -f /etc/apt/apt.conf.d/docker-clean && \
+    echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' > /etc/apt/apt.conf.d/keep-cache
+
 # If you're in China, or you need to change sources, will be set CHANGE_SOURCE to true in .env.
 
 ARG CHANGE_SOURCE=false
@@ -42,7 +51,7 @@ RUN if [ "$IVPLDOCK_PHP_VERSION" = "7.1" ] || [ ${IVPLDOCK_PHP_VERSION} = "7.2" 
 fi
 
 # always run apt update when start and after add new source list, then clean up at end.
-RUN set -xe; \
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked set -xe; \
     apt-get update -yqq && \
     pecl channel-update pecl.php.net && \
     apt-get install -yqq \
@@ -96,7 +105,7 @@ RUN if [ ${INSTALL_BZ2} = true ]; then \
 ###########################################################################
 
 ARG INSTALL_ENCHANT=false
-RUN if [ ${INSTALL_ENCHANT} = true ]; then \
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked if [ ${INSTALL_ENCHANT} = true ]; then \
   apt-get install -yqq libenchant-dev; \
   docker-php-ext-install enchant; \
   php -m | grep -oiE '^enchant$'; \
@@ -108,7 +117,7 @@ fi
 
 ARG INSTALL_GMP=false
 
-RUN if [ ${INSTALL_GMP} = true ]; then \
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked if [ ${INSTALL_GMP} = true ]; then \
     # Install the GMP extension
 	  apt-get install -yqq libgmp-dev && \
     if [ $(php -r "echo PHP_MAJOR_VERSION;") = "5" ]; then \
@@ -155,7 +164,7 @@ USER root
 
 ARG INSTALL_FAKETIME=false
 
-RUN if [ ${INSTALL_FAKETIME} = true ]; then \
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked if [ ${INSTALL_FAKETIME} = true ]; then \
     apt-get install -yqq libfaketime \
 ;fi
 
@@ -203,7 +212,7 @@ ARG INSTALL_PG_CLIENT=false
 ARG INSTALL_POSTGIS=false
 ARG PG_CLIENT_VERSION
 
-RUN if [ ${INSTALL_PG_CLIENT} = true ]; then \
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked if [ ${INSTALL_PG_CLIENT} = true ]; then \
     apt-get install -yqq gnupg \
     && . /etc/os-release \
     && echo "deb http://apt.postgresql.org/pub/repos/apt $VERSION_CODENAME-pgdg main" > /etc/apt/sources.list.d/pgdg.list \
@@ -285,7 +294,7 @@ RUN if [ ${INSTALL_PCOV} = true ]; then \
 
 ARG INSTALL_PHPDBG=false
 
-RUN if [ ${INSTALL_PHPDBG} = true ]; then \
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked if [ ${INSTALL_PHPDBG} = true ]; then \
     # Load the xdebug extension only with phpunit commands
     apt-get install -yqq --force-yes php${IVPLDOCK_PHP_VERSION}-phpdbg \
 ;fi
@@ -468,7 +477,7 @@ RUN set -eux; \
 
 ARG INSTALL_CASSANDRA=false
 
-RUN if [ ${INSTALL_CASSANDRA} = true ]; then \
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked if [ ${INSTALL_CASSANDRA} = true ]; then \
     if [ $(php -r "echo PHP_MAJOR_VERSION;") = "8" ]; then \
       echo "PHP Driver for Cassandra is not supported for PHP 8.0."; \
     else \
@@ -642,7 +651,7 @@ ENV OCI_LIB_DIR="/opt/oracle/instantclient_${ORACLE_INSTANT_CLIENT_VERSION}"
 ENV OCI_INCLUDE_DIR="/opt/oracle/instantclient_${ORACLE_INSTANT_CLIENT_VERSION}/sdk/include"
 ENV OCI_VERSION=${ORACLE_INSTANT_CLIENT_MAJOR}
 
-RUN if [ ${INSTALL_OCI8} = true ]; then \
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked if [ ${INSTALL_OCI8} = true ]; then \
     # Install wget
     apt-get install --no-install-recommends -yqq wget \
     # Install Oracle Instantclient
@@ -729,7 +738,7 @@ RUN if [ ${INSTALL_MYSQLI} = true ]; then \
 
 ARG INSTALL_INTL=false
 
-RUN if [ ${INSTALL_INTL} = true ]; then \
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked if [ ${INSTALL_INTL} = true ]; then \
     # Install intl and requirements
     apt-get install -yqq zlib1g-dev libicu-dev g++ && \
     docker-php-ext-configure intl && \
@@ -742,7 +751,7 @@ RUN if [ ${INSTALL_INTL} = true ]; then \
 
 ARG INSTALL_GHOSTSCRIPT=false
 
-RUN if [ ${INSTALL_GHOSTSCRIPT} = true ]; then \
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked if [ ${INSTALL_GHOSTSCRIPT} = true ]; then \
     # Install the ghostscript extension
     # for PDF editing
     apt-get install -yqq \
@@ -756,7 +765,7 @@ RUN if [ ${INSTALL_GHOSTSCRIPT} = true ]; then \
 
 ARG INSTALL_LDAP=false
 
-RUN if [ ${INSTALL_LDAP} = true ]; then \
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked if [ ${INSTALL_LDAP} = true ]; then \
     apt-get install -yqq libldap2-dev && \
     ARCH=$(arch)   && \
     docker-php-ext-configure ldap --with-libdir="lib/${ARCH}-linux-gnu/" && \
@@ -769,7 +778,7 @@ RUN if [ ${INSTALL_LDAP} = true ]; then \
 
 ARG INSTALL_MSSQL=false
 
-RUN set -eux; \
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked set -eux; \
   if [ ${INSTALL_MSSQL} = true ]; then \
     if [ $(php -r "echo PHP_MAJOR_VERSION;") = "5" ]; then \
       apt-get -yqq install freetds-dev libsybdb5 \
@@ -826,7 +835,7 @@ USER root
 
 ARG INSTALL_IMAGE_OPTIMIZERS=false
 
-RUN if [ ${INSTALL_IMAGE_OPTIMIZERS} = true ]; then \
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked if [ ${INSTALL_IMAGE_OPTIMIZERS} = true ]; then \
     apt-get install -yqq jpegoptim optipng pngquant gifsicle \
 ;fi
 
@@ -840,7 +849,7 @@ ARG INSTALL_IMAGEMAGICK=false
 ARG IMAGEMAGICK_VERSION=latest
 ENV IMAGEMAGICK_VERSION ${IMAGEMAGICK_VERSION}
 
-RUN if [ ${INSTALL_IMAGEMAGICK} = true ]; then \
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked if [ ${INSTALL_IMAGEMAGICK} = true ]; then \
     apt-get update && \
     apt-get install -yqq libmagickwand-dev imagemagick && \
     if [ $(php -r "echo PHP_MAJOR_VERSION;") = "8" ]; then \
@@ -869,7 +878,7 @@ RUN if [ ${INSTALL_IMAGEMAGICK} = true ]; then \
 
 ARG INSTALL_SMB=false
 
-RUN if [ ${INSTALL_SMB} = true ]; then \
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked if [ ${INSTALL_SMB} = true ]; then \
     apt-get install -yqq smbclient libsmbclient-dev coreutils && \
     if [ $(php -r "echo PHP_MAJOR_VERSION;") = "8" ]; then \
         pecl install smbclient; \
@@ -885,7 +894,7 @@ RUN if [ ${INSTALL_SMB} = true ]; then \
 
 ARG INSTALL_IMAP=false
 
-RUN if [ "$INSTALL_IMAP" = "true" ]; then \
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked if [ "$INSTALL_IMAP" = "true" ]; then \
   if [ "$(lsb_release -rs)" != "13" ]; then \
     apt-get install -yqq libc-client-dev libkrb5-dev && \
     docker-php-ext-configure imap --with-kerberos --with-imap-ssl && \
@@ -914,7 +923,7 @@ ARG INSTALL_PHALCON=false
 ARG IVPLDOCK_PHALCON_VERSION
 ENV IVPLDOCK_PHALCON_VERSION ${IVPLDOCK_PHALCON_VERSION}
 
-RUN if [ $INSTALL_PHALCON = true ]; then \
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked if [ $INSTALL_PHALCON = true ]; then \
       apt-get update -yqq \
       && pecl channel-update pecl.php.net \
       && apt-get install -yqq libpcre3-dev; \
@@ -945,7 +954,7 @@ USER root
 
 ARG INSTALL_YAML=false
 
-RUN if [ ${INSTALL_YAML} = true ]; then \
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked if [ ${INSTALL_YAML} = true ]; then \
     apt-get install -yqq libyaml-dev; \
     if [ $(php -r "echo PHP_MAJOR_VERSION;") = "5" ]; then \
         echo '' | pecl install -a yaml-1.3.2; \
@@ -963,7 +972,7 @@ RUN if [ ${INSTALL_YAML} = true ]; then \
 
 ARG INSTALL_RDKAFKA=false
 
-RUN if [ ${INSTALL_RDKAFKA} = true ]; then \
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked if [ ${INSTALL_RDKAFKA} = true ]; then \
     apt-get install -yqq librdkafka-dev && \
     pecl install rdkafka && \
     docker-php-ext-enable rdkafka \
@@ -975,7 +984,7 @@ RUN if [ ${INSTALL_RDKAFKA} = true ]; then \
 
 ARG INSTALL_GETTEXT=false
 
-RUN if [ ${INSTALL_GETTEXT} = true ]; then \
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked if [ ${INSTALL_GETTEXT} = true ]; then \
     apt-get install -yqq zlib1g-dev libicu-dev g++ libpq-dev libssl-dev gettext && \
     docker-php-ext-install gettext \
 ;fi
@@ -987,7 +996,7 @@ RUN if [ ${INSTALL_GETTEXT} = true ]; then \
 ARG INSTALL_ADDITIONAL_LOCALES=false
 ARG ADDITIONAL_LOCALES
 
-RUN if [ ${INSTALL_ADDITIONAL_LOCALES} = true ]; then \
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked if [ ${INSTALL_ADDITIONAL_LOCALES} = true ]; then \
     apt-get install -yqq locales \
     && echo '' >> /usr/share/locale/locale.alias \
     && temp="${ADDITIONAL_LOCALES%\"}" \
@@ -1055,7 +1064,7 @@ USER root
 
 ARG INSTALL_FFMPEG=false
 
-RUN if [ ${INSTALL_FFMPEG} = true ]; then \
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked if [ ${INSTALL_FFMPEG} = true ]; then \
     apt-get update -y && \
     apt-get -y install ffmpeg \
 ;fi
@@ -1101,7 +1110,7 @@ USER root
 ARG INSTALL_WKHTMLTOPDF=false
 ARG WKHTMLTOPDF_VERSION=0.12.6.1-3
 
-RUN if [ ${INSTALL_WKHTMLTOPDF} = true ]; then \
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked if [ ${INSTALL_WKHTMLTOPDF} = true ]; then \
     ARCH=$(arch | sed s/aarch64/arm64/ | sed s/x86_64/amd64/) \
     && apt-get install -yqq \
       libxrender1 \
@@ -1200,7 +1209,7 @@ USER root
 
 ARG INSTALL_PHPDECIMAL=false
 
-RUN if [ ${INSTALL_PHPDECIMAL} = true ]; then \
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked if [ ${INSTALL_PHPDECIMAL} = true ]; then \
   if [ $(php -r "echo PHP_MAJOR_VERSION;") = "5" ]; then \
     echo 'decimal not support PHP 5.6'; \
   else \
@@ -1327,7 +1336,7 @@ USER root
 
 ARG INSTALL_ZMQ=false
 
-RUN if [ ${INSTALL_ZMQ} = true ]; then \
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked if [ ${INSTALL_ZMQ} = true ]; then \
     apt-get install --yes git libzmq3-dev \
     && git clone https://github.com/zeromq/php-zmq.git \
     && cd php-zmq \
@@ -1380,7 +1389,7 @@ USER root
 
 ARG INSTALL_DNSUTILS=false
 
-RUN if [ ${INSTALL_DNSUTILS} = true ]; then \
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked if [ ${INSTALL_DNSUTILS} = true ]; then \
     apt-get update && apt-get install -y dnsutils \
 ;fi
 
@@ -1390,7 +1399,7 @@ RUN if [ ${INSTALL_DNSUTILS} = true ]; then \
 
 ARG INSTALL_GRAPHVIZ=false
 
-RUN if [ ${INSTALL_GRAPHVIZ} = true ]; then \
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked if [ ${INSTALL_GRAPHVIZ} = true ]; then \
     apt-get install -yqq graphviz \
 ;fi
 

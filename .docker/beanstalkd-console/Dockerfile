@@ -1,8 +1,9 @@
+# syntax=docker/dockerfile:1
 FROM php:latest
 
 LABEL maintainer="Mahmoud Zalt <mahmoud@zalt.me>"
 
-RUN apt-get update && apt-get install -y curl
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked apt-get update && apt-get install -y curl
 
 RUN curl -sL https://github.com/ptrofimov/beanstalk_console/archive/master.tar.gz | tar xvz -C /tmp
 RUN mv /tmp/beanstalk_console-master /source
