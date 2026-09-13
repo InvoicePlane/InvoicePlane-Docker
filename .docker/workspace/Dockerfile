@@ -717,6 +717,32 @@ RUN if [ ${INSTALL_YARN} = true ]; then \
 fi
 
 ###########################################################################
+# Java (Saxon / Schematron validation):
+###########################################################################
+
+USER root
+
+ARG INSTALL_JDK=false
+
+# InvoicePlane's EInvoiceSchematronValidator shells out to `java` to run a
+# vendored Saxon-HE jar (application/modules/integrations/resources/validation/
+# schematron/engine/saxon-he-12.10.jar) for EN 16931/Factur-X Schematron
+# validation. The jar itself ships in the InvoicePlane repo, not here — this
+# only needs a JRE on PATH. Saxon-HE 12.x requires Java 11+; 17 is an LTS
+# release comfortably ahead of that floor. Without this, tests that need it
+# self-skip via markTestSkipped() rather than fail, so the gap is silent
+# unless you go looking for it.
+RUN if [ ${INSTALL_JDK} = true ]; then \
+      set -eux; \
+      apt-get update; \
+      apt-get install -y --no-install-recommends openjdk-17-jre-headless; \
+      apt-get clean; \
+      rm -rf /var/lib/apt/lists/*; \
+      java -version; \
+    fi; \
+    true
+
+###########################################################################
 # Headless Chromium:
 ###########################################################################
 
