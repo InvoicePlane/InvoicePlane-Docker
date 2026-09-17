@@ -657,8 +657,15 @@ RUN if [ ${INSTALL_NODE} = true ]; then \
     echo "" >> /home/ivpldock/.bashrc && \
     echo "# Load NVM" >> /home/ivpldock/.bashrc && \
     echo "export NVM_DIR=\"/home/ivpldock/.nvm\"" >> /home/ivpldock/.bashrc && \
+    echo "# NPM_CONFIG_PREFIX is pinned to /usr/local below (see the Puppeteer" >> /home/ivpldock/.bashrc && \
+    echo "# section) -- unset it only around the nvm.sh source, or nvm's implicit" >> /home/ivpldock/.bashrc && \
+    echo "# use on every shell start-up prints its \"not compatible\" warning." >> /home/ivpldock/.bashrc && \
+    echo "__nvm_npm_config_prefix=\"\${NPM_CONFIG_PREFIX-}\"" >> /home/ivpldock/.bashrc && \
+    echo "unset NPM_CONFIG_PREFIX" >> /home/ivpldock/.bashrc && \
     echo "[ -s \"\$NVM_DIR/nvm.sh\" ] && \\. \"\$NVM_DIR/nvm.sh\"" >> /home/ivpldock/.bashrc && \
-    echo "[ -s \"\$NVM_DIR/bash_completion\" ] && \\. \"\$NVM_DIR/bash_completion\"" >> /home/ivpldock/.bashrc; \
+    echo "[ -s \"\$NVM_DIR/bash_completion\" ] && \\. \"\$NVM_DIR/bash_completion\"" >> /home/ivpldock/.bashrc && \
+    echo "[ -n \"\$__nvm_npm_config_prefix\" ] && export NPM_CONFIG_PREFIX=\"\$__nvm_npm_config_prefix\"" >> /home/ivpldock/.bashrc && \
+    echo "unset __nvm_npm_config_prefix" >> /home/ivpldock/.bashrc; \
 fi; \
 true
 
