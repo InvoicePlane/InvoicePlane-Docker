@@ -638,6 +638,7 @@ RUN if [ ${INSTALL_NODE} = true ]; then \
     echo "Installing NVM..." && \
     mkdir -p $NVM_DIR && \
     curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash && \
+    sed -i '/This loads nvm/d' /home/ivpldock/.bashrc && \
     . "$NVM_DIR/nvm.sh" && \
     echo "NVM installed successfully. Installing Node versions..." && \
     for version in 18 20 22 24; do \
@@ -647,11 +648,7 @@ RUN if [ ${INSTALL_NODE} = true ]; then \
     done && \
     nvm use 22 && \
     nvm alias default 22 && \
-    echo "Node setup complete. Creating symlinks for global access..." && \
-    NODE_MODS_DIR="$(nvm which default | sed -r 's/\/bin\/node//')/lib/node_modules" && \
-    ln -sf "$(nvm which default)" /usr/local/bin/node && \
-    ln -sf "$(nvm which default | sed -r 's/\/bin\/node//')/bin/npm" /usr/local/bin/npm && \
-    ln -sf "$(nvm which default | sed -r 's/\/bin\/node//')/bin/npx" /usr/local/bin/npx && \
+    echo "Node setup complete." && \
     npm --version && \
     node --version && \
     echo "" >> /home/ivpldock/.bashrc && \
