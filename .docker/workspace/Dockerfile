@@ -22,13 +22,18 @@ ENV DEBIAN_FRONTEND noninteractive
 USER root
 
 ###########################################################################
-# Force PHP to Latest Patch Version
+# Force PHP to Latest Patch Version (via Sury PPA for Debian/Ubuntu)
 ###########################################################################
-# Ensure we get the latest security patches (e.g., 8.4.27 instead of 8.4.26)
+# Add Sury PHP repository for latest security patches (8.4.27+)
 RUN set -eux; \
     apt-get update; \
-    apt-get install -y --only-upgrade php8.4 php8.4-cli; \
-    php -v | grep -o 'PHP [0-9.]*'; \
+    apt-get install -y --no-install-recommends curl gnupg; \
+    curl -sSL https://packages.sury.org/php/apt.gpg -o /usr/share/keyrings/deb.sury.org-php.gpg; \
+    echo "deb [signed-by=/usr/share/keyrings/deb.sury.org-php.gpg] https://packages.sury.org/php/ $(lsb_release -sc) main" > /etc/apt/sources.list.d/sury-php.list; \
+    apt-get update; \
+    apt-cache policy php8.4 | head -10; \
+    apt-get install -y php8.4 php8.4-cli --reinstall; \
+    php -v | head -1; \
     rm -rf /var/lib/apt/lists/*
 
 ###########################################################################
