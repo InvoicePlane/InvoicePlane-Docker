@@ -28,10 +28,10 @@ USER root
 RUN set -eux; \
     apt-get update; \
     apt-get install -y --no-install-recommends curl gnupg; \
+    DIST=$(. /etc/os-release && echo "$VERSION_CODENAME"); \
     curl -sSL https://packages.sury.org/php/apt.gpg -o /usr/share/keyrings/deb.sury.org-php.gpg; \
-    echo "deb [signed-by=/usr/share/keyrings/deb.sury.org-php.gpg] https://packages.sury.org/php/ $(lsb_release -sc) main" > /etc/apt/sources.list.d/sury-php.list; \
+    echo "deb [signed-by=/usr/share/keyrings/deb.sury.org-php.gpg] https://packages.sury.org/php/ $DIST main" > /etc/apt/sources.list.d/sury-php.list; \
     apt-get update; \
-    apt-cache policy php8.4 | head -10; \
     apt-get install -y php8.4 php8.4-cli --reinstall; \
     php -v | head -1; \
     rm -rf /var/lib/apt/lists/*
