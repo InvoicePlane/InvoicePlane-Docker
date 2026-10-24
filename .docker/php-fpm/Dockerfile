@@ -19,23 +19,6 @@ LABEL maintainer="Niels Drost <nielsdrost7@gmail.com>"
 ENV DEBIAN_FRONTEND noninteractive
 
 ###########################################################################
-# Add Sury PHP Repository (Official Method)
-###########################################################################
-# Add Sury PHP repository for latest security patches (8.4.27)
-# Uses official setup from https://packages.sury.org/php/
-RUN set -eux; \
-    apt-get update; \
-    apt-get install -y --no-install-recommends lsb-release ca-certificates curl; \
-    curl -sSLo /tmp/debsuryorg-archive-keyring.deb https://packages.sury.org/debsuryorg-archive-keyring.deb; \
-    dpkg -i /tmp/debsuryorg-archive-keyring.deb; \
-    sh -c 'echo "deb [signed-by=/usr/share/keyrings/debsuryorg-archive-keyring.gpg] https://packages.sury.org/php/ $(lsb_release -sc) main" > /etc/apt/sources.list.d/php.list'; \
-    apt-get update; \
-    apt-get install -y php8.4-fpm php8.4-cli; \
-    php -v | head -1; \
-    rm -f /tmp/debsuryorg-archive-keyring.deb; \
-    rm -rf /var/lib/apt/lists/*
-
-###########################################################################
 # Base PHP Dependencies and Extensions
 ###########################################################################
 # Install common system libraries and PHP extensions needed for most PHP projects
