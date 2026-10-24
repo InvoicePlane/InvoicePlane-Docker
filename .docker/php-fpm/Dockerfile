@@ -19,6 +19,16 @@ LABEL maintainer="Niels Drost <nielsdrost7@gmail.com>"
 ENV DEBIAN_FRONTEND noninteractive
 
 ###########################################################################
+# Force PHP to Latest Patch Version
+###########################################################################
+# Ensure we get the latest security patches (e.g., 8.4.27 instead of 8.4.26)
+RUN set -eux; \
+    apt-get update; \
+    apt-get install -y --only-upgrade php8.4 php8.4-fpm php8.4-cli; \
+    php -v | grep -o 'PHP [0-9.]*'; \
+    rm -rf /var/lib/apt/lists/*
+
+###########################################################################
 # Base PHP Dependencies and Extensions
 ###########################################################################
 # Install common system libraries and PHP extensions needed for most PHP projects
