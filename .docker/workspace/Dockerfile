@@ -33,7 +33,7 @@ RUN set -eux; \
     dpkg -i /tmp/debsuryorg-archive-keyring.deb; \
     sh -c 'echo "deb [signed-by=/usr/share/keyrings/debsuryorg-archive-keyring.gpg] https://packages.sury.org/php/ $(lsb_release -sc) main" > /etc/apt/sources.list.d/php.list'; \
     apt-get update; \
-    apt-get install -y php8.4 php8.4-cli; \
+    apt-get install -y php8.4-cli; \
     php -v | head -1; \
     rm -f /tmp/debsuryorg-archive-keyring.deb; \
     rm -rf /var/lib/apt/lists/*
