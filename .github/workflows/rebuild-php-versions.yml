@@ -1,0 +1,121 @@
+name: Rebuild Images for Specific PHP Version
+
+on:
+  workflow_dispatch:
+    inputs:
+      php-version:
+        description: 'PHP version to build (e.g., 8.2, 8.3, 8.4, 8.5)'
+        required: true
+        type: choice
+        options:
+          - '8.2'
+          - '8.3'
+          - '8.4'
+          - '8.5'
+      build-all:
+        description: 'Build all services or specific ones'
+        required: true
+        type: choice
+        options:
+          - 'all'
+          - 'php-fpm-only'
+          - 'workspace-only'
+
+jobs:
+  rebuild-images:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Create .env.docker from template
+        run: cp .env.example .env.docker
+
+      - name: Build all images (PHP ${{ inputs.php-version }})
+        if: inputs.build-all == 'all'
+        env:
+          PHP_VERSION: ${{ inputs.php-version }}
+        run: |
+          echo "Building all images for PHP ${{ inputs.php-version }}"
+          docker compose \
+            --env-file .env.docker \
+            build --no-cache
+        timeout-minutes: 120
+
+      - name: Build php-fpm only (PHP ${{ inputs.php-version }})
+        if: inputs.build-all == 'php-fpm-only'
+        env:
+          PHP_VERSION: ${{ inputs.php-version }}
+        run: |
+          echo "Building php-fpm for PHP ${{ inputs.php-version }}"
+          docker compose \
+            --env-file .env.docker \
+            build --no-cache php-fpm
+        timeout-minutes: 60
+
+      - name: Build workspace only (PHP ${{ inputs.php-version }})
+        if: inputs.build-all == 'workspace-only'
+        env:
+          PHP_VERSION: ${{ inputs.php-version }}
+        run: |
+          echo "Building workspace for PHP ${{ inputs.php-version }}"
+          docker compose \
+            --env-file .env.docker \
+            build --no-cache workspace
+        timeout-minutes: 60
+
+      - name: Verify PHP version
+        env:
+          PHP_VERSION: ${{ inputs.php-version }}
+        run: |
+          echo "Verifying PHP ${{ inputs.php-version }} in images..."
+
+          if [ "${{ inputs.build-all }}" = "all" ] || [ "${{ inputs.build-all }}" = "php-fpm-only" ]; then
+            echo "=== php-fpm ==="
+            docker compose \
+              --env-file .env.docker \
+              run --rm php-fpm php -v
+          fi
+
+          if [ "${{ inputs.build-all }}" = "all" ] || [ "${{ inputs.build-all }}" = "workspace-only" ]; then
+            echo "=== workspace ==="
+            docker compose \
+              --env-file .env.docker \
+              run --rm workspace php -v
+          fi
+        timeout-minutes: 15
+
+      - name: Verify extensions
+        if: inputs.build-all == 'all' || inputs.build-all == 'php-fpm-only'
+        env:
+          PHP_VERSION: ${{ inputs.php-version }}
+        run: |
+          echo "=== Checking PHP extensions in php-fpm ==="
+          docker compose \
+            --env-file .env.docker \
+            run --rm php-fpm php -m | grep -E "gd|pdo_mysql|pdo_pgsql"
+        timeout-minutes: 10
+
+      - name: Verify workspace tools
+        if: inputs.build-all == 'all' || inputs.build-all == 'workspace-only'
+        env:
+          PHP_VERSION: ${{ inputs.php-version }}
+        run: |
+          echo "=== Checking tools in workspace ==="
+          docker compose \
+            --env-file .env.docker \
+            run --rm workspace bash -c "
+              echo 'PHP:' && php -v | head -1 && \
+              echo 'Composer:' && composer --version && \
+              echo 'Extensions:' && php -m | grep -E 'gd|pdo_mysql|pdo_pgsql|zip|intl'
+            "
+        timeout-minutes: 15
+
+      - name: Summary
+        run: |
+          echo "✅ Build completed for PHP ${{ inputs.php-version }}"
+          echo "Services built: ${{ inputs.build-all }}"

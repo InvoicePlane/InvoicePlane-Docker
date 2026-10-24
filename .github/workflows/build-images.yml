@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        php-version: ['8.2', '8.3', '8.4']
+        php-version: ['8.2', '8.3', '8.4', '8.5']
       fail-fast: false
 
     steps:
@@ -58,12 +58,10 @@ jobs:
             exec -T workspace bash -c "
               echo '=== PHP Version ===' && \
               php -v && \
-              echo '=== Node Version ===' && \
-              node --version && \
-              echo '=== Yarn Version ===' && \
-              yarn --version && \
-              echo '=== Npm Version ===' && \
-              npm --version && \
+              echo '=== Composer ===' && \
+              composer --version && \
+              echo '=== PHP Extensions ===' && \
+              php -m | grep -E 'gd|pdo_mysql|pdo_pgsql|zip|intl' && \
               echo '=== Workspace User ===' && \
               id && \
               echo '=== All checks passed! ===' \
@@ -79,7 +77,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        php-version: ['8.2', '8.3', '8.4']
+        php-version: ['8.2', '8.3', '8.4', '8.5']
       fail-fast: false
 
     steps:
