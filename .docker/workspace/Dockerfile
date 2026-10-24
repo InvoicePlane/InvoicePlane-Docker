@@ -3,28 +3,57 @@
 # Image Setup
 #--------------------------------------------------------------------------
 #
-# To edit the 'workspace' base Image, visit its repository on Github
-#    https://github.com/Laradock/workspace
+# Using official PHP CLI images from Docker Hub.
+# Available tags: https://hub.docker.com/_/php/tags?name=cli
 #
-# To change its version, see the available Tags on the Docker Hub:
-#    https://hub.docker.com/r/laradock/workspace/tags/
-#
-# Note: Base Image name format {image-tag}-{php-version}
+# Official images receive security updates promptly and are kept current
+# with latest patch versions (e.g., 8.4.27, not stale 8.4.6).
 #
 
 ARG IVPLDOCK_PHP_VERSION
-ARG BASE_IMAGE_TAG_PREFIX=latest
-FROM laradock/workspace:${BASE_IMAGE_TAG_PREFIX}-${IVPLDOCK_PHP_VERSION}
+FROM php:${IVPLDOCK_PHP_VERSION}-cli
 
-LABEL maintainer="Mahmoud Zalt <mahmoud@zalt.me>"
-
-ARG IVPLDOCK_PHP_VERSION
+LABEL maintainer="Niels Drost <nielsdrost7@gmail.com>"
 
 # Set Environment Variables
 ENV DEBIAN_FRONTEND noninteractive
 
 # Start as root
 USER root
+
+###########################################################################
+# Base PHP Dependencies and Extensions
+###########################################################################
+# Install common system libraries and PHP extensions needed for most PHP projects
+RUN set -eux; \
+    apt-get update; \
+    apt-get upgrade -y; \
+    apt-get install -y --no-install-recommends \
+            curl \
+            libmemcached-dev \
+            libz-dev \
+            libpq-dev \
+            libjpeg-dev \
+            libpng-dev \
+            libfreetype6-dev \
+            libssl-dev \
+            libwebp-dev \
+            libxpm-dev \
+            libonig-dev; \
+    rm -rf /var/lib/apt/lists/*
+
+# Install PHP extensions
+RUN set -eux; \
+    docker-php-ext-install pdo_mysql; \
+    docker-php-ext-install pdo_pgsql; \
+    docker-php-ext-configure gd \
+            --prefix=/usr \
+            --with-jpeg \
+            --with-webp \
+            --with-xpm \
+            --with-freetype; \
+    docker-php-ext-install gd; \
+    php -r 'var_dump(gd_info());'
 
 ###########################################################################
 # If you're in China, or you need to change sources, will be set CHANGE_SOURCE to true in .env.
@@ -76,7 +105,7 @@ RUN set -e; \
     \
     echo "✓ User setup complete. ivpldock: UID=$(id -u ivpldock) GID=$(id -g ivpldock)"
 
-# Step 2: Volatile System Package Installation Block
+# Step 2: Core System Package Installation
 RUN export DEBIAN_FRONTEND=noninteractive; \
     if [ ${WORKSPACE_ALLOW_RELEASE_INFO_CHANGE} = true ]; then \
       APT_GET_UPDATE_OPTIONS="--allow-releaseinfo-change"; \
@@ -86,9 +115,20 @@ RUN export DEBIAN_FRONTEND=noninteractive; \
     apt-get update ${APT_GET_UPDATE_OPTIONS} && \
     pecl channel-update pecl.php.net || true; \
     apt-get install -y --no-install-recommends apt-utils libzip-dev zip unzip nasm || echo "Core packages skipped"; \
-    apt-get install -y --no-install-recommends php${IVPLDOCK_PHP_VERSION}-zip || echo "PHP zip extension skipped"; \
-    apt-get install -y --no-install-recommends php${IVPLDOCK_PHP_VERSION}-intl || echo "PHP intl extension skipped"; \
     true
+
+# Install zip and intl extensions
+RUN set -eux; \
+    docker-php-ext-configure zip && \
+    docker-php-ext-install zip; \
+    apt-get install -y --no-install-recommends zlib1g-dev libicu-dev g++ && \
+    docker-php-ext-configure intl && \
+    docker-php-ext-install intl
+
+###########################################################################
+# Composer
+###########################################################################
+COPY --from=composer:latest /usr/bin/composer /usr/local/bin/composer
 
 #
 #--------------------------------------------------------------------------
@@ -328,7 +368,7 @@ ARG INSTALL_XDEBUG=false
 ARG XDEBUG_PORT=9003
 
 RUN if [ ${INSTALL_XDEBUG} = true ]; then \
-  apt-get install -yqq pkg-config php-xml php${IVPLDOCK_PHP_VERSION}-xml && \
+  apt-get install -yqq pkg-config libxml2-dev && \
   if [ $(php -r "echo PHP_MAJOR_VERSION;") = "8" ] || { [ $(php -r "echo PHP_MAJOR_VERSION;") = "7" ] && { [ $(php -r "echo PHP_MINOR_VERSION;") = "4" ] || [ $(php -r "echo PHP_MINOR_VERSION;") = "3" ] ;} ;}; then \
     if [ $(php -r "echo PHP_MAJOR_VERSION;") = "8" ]; then \
       pecl install xdebug-3.5.0; \
@@ -346,26 +386,28 @@ RUN if [ ${INSTALL_XDEBUG} = true ]; then \
       fi \
     fi \
   fi && \
-  echo "zend_extension=xdebug.so" >> /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/20-xdebug.ini \
+  docker-php-ext-enable xdebug \
 ;fi
 
 # ADD for REMOTE debugging
-COPY ./xdebug.ini /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/xdebug.ini
+COPY ./xdebug.ini /usr/local/etc/php/conf.d/xdebug.ini
 
-RUN if [ $(php -r "echo PHP_MAJOR_VERSION;") = "8" ] || { [ $(php -r "echo PHP_MAJOR_VERSION;") = "7" ] && { [ $(php -r "echo PHP_MINOR_VERSION;") = "4" ] || [ $(php -r "echo PHP_MINOR_VERSION;") = "3" ] ;} ;}; then \
-  sed -i "s/xdebug.remote_host=/xdebug.client_host=/" /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/xdebug.ini && \
-  sed -i "s/xdebug.remote_connect_back=0/xdebug.discover_client_host=false/" /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/xdebug.ini && \
-  sed -i "s/xdebug.remote_port=9000/xdebug.client_port=${XDEBUG_PORT}/" /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/xdebug.ini && \
-  sed -i "s/xdebug.profiler_enable=0/; xdebug.profiler_enable=0/" /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/xdebug.ini && \
-  sed -i "s/xdebug.profiler_output_dir=/xdebug.output_dir=/" /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/xdebug.ini && \
-  sed -i "s/xdebug.remote_mode=req/; xdebug.remote_mode=req/" /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/xdebug.ini && \
-  sed -i "s/xdebug.remote_autostart=0/xdebug.start_with_request=yes/" /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/xdebug.ini && \
-  sed -i "s/xdebug.remote_enable=0/xdebug.mode=debug/" /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/xdebug.ini \
-;else \
-  sed -i "s/xdebug.remote_autostart=0/xdebug.remote_autostart=1/" /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/xdebug.ini && \
-  sed -i "s/xdebug.remote_enable=0/xdebug.remote_enable=1/" /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/xdebug.ini \
+RUN if [ ${INSTALL_XDEBUG} = true ]; then \
+  if [ $(php -r "echo PHP_MAJOR_VERSION;") = "8" ] || { [ $(php -r "echo PHP_MAJOR_VERSION;") = "7" ] && { [ $(php -r "echo PHP_MINOR_VERSION;") = "4" ] || [ $(php -r "echo PHP_MINOR_VERSION;") = "3" ] ;} ;}; then \
+    sed -i "s/xdebug.remote_host=/xdebug.client_host=/" /usr/local/etc/php/conf.d/xdebug.ini && \
+    sed -i "s/xdebug.remote_connect_back=0/xdebug.discover_client_host=false/" /usr/local/etc/php/conf.d/xdebug.ini && \
+    sed -i "s/xdebug.remote_port=9000/xdebug.client_port=${XDEBUG_PORT}/" /usr/local/etc/php/conf.d/xdebug.ini && \
+    sed -i "s/xdebug.profiler_enable=0/; xdebug.profiler_enable=0/" /usr/local/etc/php/conf.d/xdebug.ini && \
+    sed -i "s/xdebug.profiler_output_dir=/xdebug.output_dir=/" /usr/local/etc/php/conf.d/xdebug.ini && \
+    sed -i "s/xdebug.remote_mode=req/; xdebug.remote_mode=req/" /usr/local/etc/php/conf.d/xdebug.ini && \
+    sed -i "s/xdebug.remote_autostart=0/xdebug.start_with_request=yes/" /usr/local/etc/php/conf.d/xdebug.ini && \
+    sed -i "s/xdebug.remote_enable=0/xdebug.mode=debug/" /usr/local/etc/php/conf.d/xdebug.ini \
+  ;else \
+    sed -i "s/xdebug.remote_autostart=0/xdebug.remote_autostart=1/" /usr/local/etc/php/conf.d/xdebug.ini && \
+    sed -i "s/xdebug.remote_enable=0/xdebug.remote_enable=1/" /usr/local/etc/php/conf.d/xdebug.ini \
+  ;fi && \
+  sed -i "s/xdebug.cli_color=0/xdebug.cli_color=1/" /usr/local/etc/php/conf.d/xdebug.ini \
 ;fi
-RUN sed -i "s/xdebug.cli_color=0/xdebug.cli_color=1/" /etc/php/${IVPLDOCK_PHP_VERSION}/cli/conf.d/xdebug.ini
 
 ###########################################################################
 # pcov:

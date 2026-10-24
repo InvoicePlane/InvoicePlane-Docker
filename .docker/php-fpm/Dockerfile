@@ -3,25 +3,54 @@
 # Image Setup
 #--------------------------------------------------------------------------
 #
-# To edit the 'php-fpm' base Image, visit its repository on Github
-#    https://github.com/Laradock/php-fpm
+# Using official PHP FPM images from Docker Hub.
+# Available tags: https://hub.docker.com/_/php/tags?name=fpm
 #
-# To change its version, see the available Tags on the Docker Hub:
-#    https://hub.docker.com/r/laradock/php-fpm/tags/
-#
-# Note: Base Image name format {image-tag}-{php-version}
+# Official images receive security updates promptly and are kept current
+# with latest patch versions (e.g., 8.4.27, not stale 8.4.6).
 #
 
 ARG IVPLDOCK_PHP_VERSION
-ARG BASE_IMAGE_TAG_PREFIX=latest
-FROM laradock/php-fpm:${BASE_IMAGE_TAG_PREFIX}-${IVPLDOCK_PHP_VERSION}
+FROM php:${IVPLDOCK_PHP_VERSION}-fpm
 
-LABEL maintainer="Mahmoud Zalt <mahmoud@zalt.me>"
-
-ARG IVPLDOCK_PHP_VERSION
+LABEL maintainer="Niels Drost <nielsdrost7@gmail.com>"
 
 # Set Environment Variables
 ENV DEBIAN_FRONTEND noninteractive
+
+###########################################################################
+# Base PHP Dependencies and Extensions
+###########################################################################
+# Install common system libraries and PHP extensions needed for most PHP projects
+RUN set -eux; \
+    apt-get update; \
+    apt-get upgrade -y; \
+    apt-get install -y --no-install-recommends \
+            curl \
+            libmemcached-dev \
+            libz-dev \
+            libpq-dev \
+            libjpeg-dev \
+            libpng-dev \
+            libfreetype6-dev \
+            libssl-dev \
+            libwebp-dev \
+            libxpm-dev \
+            libonig-dev; \
+    rm -rf /var/lib/apt/lists/*
+
+# Install PHP extensions
+RUN set -eux; \
+    docker-php-ext-install pdo_mysql; \
+    docker-php-ext-install pdo_pgsql; \
+    docker-php-ext-configure gd \
+            --prefix=/usr \
+            --with-jpeg \
+            --with-webp \
+            --with-xpm \
+            --with-freetype; \
+    docker-php-ext-install gd; \
+    php -r 'var_dump(gd_info());'
 
 # If you're in China, or you need to change sources, will be set CHANGE_SOURCE to true in .env.
 
