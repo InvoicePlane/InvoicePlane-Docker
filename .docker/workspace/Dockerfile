@@ -22,18 +22,20 @@ ENV DEBIAN_FRONTEND noninteractive
 USER root
 
 ###########################################################################
-# Force PHP to Latest Patch Version (via Sury PPA for Debian/Ubuntu)
+# Add Sury PHP Repository (Official Method)
 ###########################################################################
-# Add Sury PHP repository for latest security patches (8.4.27+)
+# Add Sury PHP repository for latest security patches (8.4.27)
+# Uses official setup from https://packages.sury.org/php/
 RUN set -eux; \
     apt-get update; \
-    apt-get install -y --no-install-recommends curl gnupg; \
-    DIST=$(. /etc/os-release && echo "$VERSION_CODENAME"); \
-    curl -sSL https://packages.sury.org/php/apt.gpg -o /usr/share/keyrings/deb.sury.org-php.gpg; \
-    echo "deb [signed-by=/usr/share/keyrings/deb.sury.org-php.gpg] https://packages.sury.org/php/ $DIST main" > /etc/apt/sources.list.d/sury-php.list; \
+    apt-get install -y --no-install-recommends lsb-release ca-certificates curl; \
+    curl -sSLo /tmp/debsuryorg-archive-keyring.deb https://packages.sury.org/debsuryorg-archive-keyring.deb; \
+    dpkg -i /tmp/debsuryorg-archive-keyring.deb; \
+    sh -c 'echo "deb [signed-by=/usr/share/keyrings/debsuryorg-archive-keyring.gpg] https://packages.sury.org/php/ $(lsb_release -sc) main" > /etc/apt/sources.list.d/php.list'; \
     apt-get update; \
-    apt-get install -y php8.4 php8.4-cli --reinstall; \
+    apt-get install -y php8.4 php8.4-cli; \
     php -v | head -1; \
+    rm -f /tmp/debsuryorg-archive-keyring.deb; \
     rm -rf /var/lib/apt/lists/*
 
 ###########################################################################
