@@ -418,11 +418,10 @@ USER root
 ARG INSTALL_PCOV=false
 
 RUN if [ ${INSTALL_PCOV} = true ]; then \
-  if [ $(php -r "echo PHP_MAJOR_VERSION;") = "8" ] || { [ $(php -r "echo PHP_MAJOR_VERSION;") = "7" ] && [ $(php -r "echo PHP_MINOR_VERSION;") != "0" ]; }; then \
     pecl install pcov && \
-    echo "extension=pcov.so" >> /etc/php/${IVPLDOCK_PHP_VERSION}/cli/php.ini && \
-    echo "pcov.enabled" >> /etc/php/${IVPLDOCK_PHP_VERSION}/cli/php.ini \
-  ;fi \
+    docker-php-ext-enable pcov && \
+    printf "pcov.enabled=1\npcov.directory=/var/www/projects\n" >> /usr/local/etc/php/conf.d/docker-php-ext-pcov.ini && \
+    echo "memory_limit=2G" > /usr/local/etc/php/conf.d/zz-memory.ini \
 ;fi
 
 ###########################################################################
