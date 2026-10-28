@@ -32,3 +32,4 @@ docker-compose.custom.yml
 .docker/workspace/Dockerfile.*
 SESSION_RECAP.md
 .env.example.*
+nginx/
